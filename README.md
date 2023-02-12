@@ -5,7 +5,7 @@ A 3D-game with PvE and puzzle-solving elements made in C++ using OpenGL. Set in 
 
 ## Installation
 
-```sh
+```cmake
 make penumbra
 ./penumbra
 ```
