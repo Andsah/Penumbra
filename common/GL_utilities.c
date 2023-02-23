@@ -15,6 +15,8 @@
 // 200405: Added a few typecasts that were missing.
 // 210219: Shader errors are now visible on new VS19.
 // 210324: Compiling without fragment shader is now allowed
+// 220113: Removed the last remains of VS support. Use a system that
+// can handle printf! From now on, I will use CodeBlocks on Windows.
 
 //#define GL3_PROTOTYPES
 #ifdef WIN32
@@ -84,29 +86,24 @@ void printProgramInfoLog(GLuint obj, const char *vfn, const char *ffn,
 	GLint infologLength = 0;
 	GLint charsWritten  = 0;
 	char *infoLog;
-	char msg[2048] = "\n";
 
 	glGetProgramiv(obj, GL_INFO_LOG_LENGTH,&infologLength);
 
 	if (infologLength > 2)
 	{
 		if (ffn == NULL)
-			sprintf(msg, "[From %s:]\n", vfn);
+			fprintf(stderr, "[From %s:]\n", vfn);
 		else
 		if (gfn == NULL)
-			sprintf(msg, "[From %s+%s:]\n", vfn, ffn);
+			fprintf(stderr, "[From %s+%s:]\n", vfn, ffn);
 		else
 		if (tcfn == NULL || tefn == NULL)
-			sprintf(msg, "[From %s+%s+%s:]\n", vfn, ffn, gfn);
+			fprintf(stderr, "[From %s+%s+%s:]\n", vfn, ffn, gfn);
 		else
-			sprintf(msg, "[From %s+%s+%s+%s+%s:]\n", vfn, ffn, gfn, tcfn, tefn);
-		if (strlen(msg) > 1)
-
-		fputs(msg, stderr);
+			fprintf(stderr, "[From %s+%s+%s+%s+%s:]\n", vfn, ffn, gfn, tcfn, tefn);
 		infoLog = (char *)malloc(infologLength);
 		glGetProgramInfoLog(obj, infologLength, &charsWritten, infoLog);
-		fputs(infoLog, stderr);
-		fputs("\n", stderr);
+		fprintf(stderr, "%s\n",infoLog);
 		free(infoLog);
 	}
 }
@@ -243,40 +240,6 @@ void printError(const char *functionName)
    }
 }
 
-
-/*
-
-// Keymap mini manager
-// Important! Uses glutKeyboardFunc/glutKeyboardUpFunc so you can't use them
-// elsewhere or they will conflict.
-// (This functionality is built-in in MicroGlut, as "glutKeyIsDown" where this conflict should not exist.)
-
-char keymap[256];
-
-char keyIsDown(unsigned char c)
-{
-	return keymap[(unsigned int)c];
-}
-
-void keyUp(unsigned char key, int x, int y)
-{
-	keymap[(unsigned int)key] = 0;
-}
-
-void keyDown(unsigned char key, int x, int y)
-{
-	keymap[(unsigned int)key] = 1;
-}
-
-void initKeymapManager()
-{
-	int i;
-	for (i = 0; i < 256; i++) keymap[i] = 0;
-
-	glutKeyboardFunc(keyDown);
-	glutKeyboardUpFunc(keyUp);
-}
-*/
 
 // FBO
 

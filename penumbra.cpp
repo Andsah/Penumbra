@@ -11,17 +11,20 @@
 */
 // The main game file
 #define MAIN
+#include "camera.h"
 #include "MicroGlut.h"
 #include "GL_utilities.h"
 #include "VectorUtils4.h"
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
-#include "camera.h"
 
 // Matrix for projecting the view onto the screen(?)
 mat4 projectionMatrix;
 // Object for handling player controls and camera movement
 Camera* player_camera = new Camera();
+
+// Intermediary to set the look-at function in the player camera to be used by openGL
+void bindCamera(int x, int y) {player_camera->calcLookAt(x, y);}
 
 // TODO: make classes/structs for light source, game objects etc.
 
@@ -66,9 +69,6 @@ void init(void) {
 void display(void) {
 
 }
-
-// Intermediary to set the look-at function in the player camera to be used by openGL
-void bindCamera (int x, int y) {player_camera->calcLookAt(x, y);}
 
 
 /*      __  __          _        

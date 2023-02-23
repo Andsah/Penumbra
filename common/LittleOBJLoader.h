@@ -84,6 +84,10 @@ void DisposeModel(Model *m);
 //}
 ///#endif
 
+// --------------- Implementation part ----------------
+
+#ifndef LOL_IMPLEMENTATION
+#define LOL_IMPLEMENTATION
 
 // Little OBJ loader
 // Ingemar's little OBJ loader
@@ -115,6 +119,7 @@ void DisposeModel(Model *m);
 // 210502: Dispose the material name list, omission found by Jens Lindgren.
 // 220222: Added a printed error message if ParseOBJ can't open a file. Also makes DrawModel always activare the shader for you.
 // 2022 somewhere: Made experimental header only version, necessary to work with VectorUtils in C++.
+// 2023-02-05: Added LOL_IMPLEMENTATION to avoid double compilation.
 
 // Usage:
 // Load simple models with LoadModel. Multi-part models are loaded with LoadModelSet.
@@ -1424,4 +1429,5 @@ void DisposeModel(Model *m)
 	free(m);
 }
 
+#endif
 #endif

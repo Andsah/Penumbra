@@ -1,5 +1,5 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef CAMERA_H
+#define CAMERA_H
 
 #include "MicroGlut.h"
 #include "GL_utilities.h"

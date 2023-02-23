@@ -74,7 +74,6 @@
 // 180314: Added some #defines for moving closer to GLSL (dot, cross...).
 // 2021-05-15: Constructors for vec3 etc replaced in order to avoid
 // problems with some C++ compilers.
-// 2022-11-10: Corrected an ifdef that could cause problems.
 
 // 2022-05-05: Created VectorUtils4, now only a header file!
 // You must define MAIN in only one file (typically the main
@@ -86,14 +85,15 @@
 // - You must #define MAIN in the main program
 // This means that VectorUtils can still be used from C and thereby many other languages,
 // while taking more advantage of C++ features when using C++.
-// 20220525: Revised perpective() to conform with the reference manual as well as GLM. (But it went wrong, why?)
-// 2022-08-29: Renamed Transpose to transpose to conform better with GLSL. Corrected perspective.
+// 20220525: Revised perpective() to conform with the reference manual as well as GLM.
+// 20230205: Added new helper functions, uploadMat4ToShader etc.
+// Made a better #ifdef for handling multiple inclusions.
 
 // You may use VectorUtils as you please. A reference to the origin is appreciated
 // but if you grab some snippets from it without reference... no problem.
 
-// VectorUtils3 header
-// See source for more information
+// VectorUtils4 interface part
+// See implementation part for more information
 
 #ifndef VECTORUTILS4
 #define VECTORUTILS4
@@ -115,11 +115,6 @@
 #define M_PI           3.14159265358979323846
 #endif
 
-// Really old type names
-#define Vector3f Point3D
-#define Matrix3f Matrix3D
-#define Matrix4f Matrix4D
-
 // GLSL-style
 // These are already changed, here I define the intermediate type names that I use in some demos.
 #define Point3D vec3
@@ -136,10 +131,11 @@
 // without knowing about the constructors, while the C++ code happily used them.
 // However, we do not need them; you can initialize with SetVec* instead of
 // vec*() and it will work.
-// Note 2022: These are now back (and more), which is possible when doing this as a header only unit.
-
+// Note 2022: These are now back (and more), which is possible when doing this as a header only unit
+// so it works with both C and C++ and still allows the constructors.
+	
 	typedef struct vec4 vec4;
-
+	
 	// vec3 is very useful
 	typedef struct vec3
 	{
@@ -158,7 +154,7 @@
 			vec3(vec4 v);
 		#endif
 	} vec3, *vec3Ptr;
-
+	
 	// vec4 is not as useful. Can be a color with alpha, or a quaternion, but IMHO you
 	// rarely need homogenous coordinate vectors on the CPU.
 	typedef struct vec4
@@ -189,13 +185,13 @@
 		{GLfloat x; GLfloat s;};
 		union
 		{GLfloat y; GLfloat t;};
-
+		
 		#ifdef __cplusplus
             vec2() {}
 			vec2(GLfloat x2, GLfloat y2) : x(x2), y(y2) {}
 		#endif
 	} vec2, *vec2Ptr;
-
+	
 	typedef struct mat3 mat3;
 	typedef struct mat4
 	{
@@ -211,7 +207,7 @@
 			}
 			mat4(GLfloat p0, GLfloat p1, GLfloat p2, GLfloat p3,
 				GLfloat p4, GLfloat p5, GLfloat p6, GLfloat p7,
-				GLfloat p8, GLfloat p9, GLfloat p10, GLfloat p11,
+				GLfloat p8, GLfloat p9, GLfloat p10, GLfloat p11, 
 				GLfloat p12, GLfloat p13, GLfloat p14, GLfloat p15)
 			{
 				m[0] = p0; m[1] = p1; m[2] = p2; m[3] = p3;
@@ -280,7 +276,7 @@
 	mat3 SetMat3(GLfloat p0, GLfloat p1, GLfloat p2, GLfloat p3, GLfloat p4, GLfloat p5, GLfloat p6, GLfloat p7, GLfloat p8);
 	mat4 SetMat4(GLfloat p0, GLfloat p1, GLfloat p2, GLfloat p3,
 				GLfloat p4, GLfloat p5, GLfloat p6, GLfloat p7,
-				GLfloat p8, GLfloat p9, GLfloat p10, GLfloat p11,
+				GLfloat p8, GLfloat p9, GLfloat p10, GLfloat p11, 
 				GLfloat p12, GLfloat p13, GLfloat p14, GLfloat p15
 				);
 // Basic vector operations on vec3's. (vec4 not included since I never need them.)
@@ -327,7 +323,7 @@
 
 // GLU replacement functions
 	mat4 lookAtv(vec3 p, vec3 l, vec3 v);
-	mat4 lookAt(GLfloat px, GLfloat py, GLfloat pz,
+	mat4 lookAt(GLfloat px, GLfloat py, GLfloat pz, 
 			GLfloat lx, GLfloat ly, GLfloat lz,
 			GLfloat vx, GLfloat vy, GLfloat vz);
 	mat4 perspective(float fovyInDegrees, float aspectRatio,
@@ -351,6 +347,16 @@
 // Convenient printing calls
 	void printMat4(mat4 m);
 	void printVec3(vec3 in);
+
+/* Utility functions for easier uploads to shaders with error messages. */
+// NEW as prototype 2022, added to VU 2023
+	void uploadMat4ToShader(GLuint shader, const char *nameInShader, mat4 m);
+	void uploadUniformIntToShader(GLuint shader, const char *nameInShader, GLint i);
+	void uploadUniformFloatToShader(GLuint shader, const char *nameInShader, GLfloat f);
+	void uploadUniformFloatArrayToShader(GLuint shader, const char *nameInShader, GLfloat *f, int arrayLength);
+	void uploadUniformVec3ToShader(GLuint shader, const char *nameInShader, vec3 v);
+	void uploadUniformVec3ArrayToShader(GLuint shader, const char *nameInShader, vec3 *a, int arrayLength);
+	void bindTextureToTextureUnit(GLuint tex, int unit);
 
 #ifdef __cplusplus
 // Convenient overloads for C++, closer to GLSL
@@ -542,13 +548,15 @@ vec3 operator*(const mat3 &a, const vec3 &b)
 }
 
 #endif
-//#endif
+#endif
 
 // ********** implementation section ************
 
 #ifdef MAIN
-//#ifndef VECTOR_UTILS_IMPLEMENTATION
-//#define VECTOR_UTILS_IMPLEMENTATION
+
+// Make sure this is included once
+#ifndef VECTORUTILS4_MAIN
+#define VECTORUTILS4_MAIN
 
 // VS doesn't define NAN properly
 #ifdef _WIN32
@@ -563,7 +571,7 @@ char transposed = 0;
 	vec3 SetVector(GLfloat x, GLfloat y, GLfloat z)
 	{
 		vec3 v;
-
+		
 		v.x = x;
 		v.y = y;
 		v.z = z;
@@ -574,7 +582,7 @@ char transposed = 0;
 	vec2 SetVec2(GLfloat x, GLfloat y)
 	{
 		vec2 v;
-
+		
 		v.x = x;
 		v.y = y;
 		return v;
@@ -583,7 +591,7 @@ char transposed = 0;
 	vec3 SetVec3(GLfloat x, GLfloat y, GLfloat z)
 	{
 		vec3 v;
-
+		
 		v.x = x;
 		v.y = y;
 		v.z = z;
@@ -593,7 +601,7 @@ char transposed = 0;
 	vec4 SetVec4(GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 	{
 		vec4 v;
-
+		
 		v.x = x;
 		v.y = y;
 		v.z = z;
@@ -620,7 +628,7 @@ char transposed = 0;
 // Like above; Modern C doesn't need this, but Visual Studio insists on old-fashioned C and needs this.
 	mat4 SetMat4(GLfloat p0, GLfloat p1, GLfloat p2, GLfloat p3,
 				GLfloat p4, GLfloat p5, GLfloat p6, GLfloat p7,
-				GLfloat p8, GLfloat p9, GLfloat p10, GLfloat p11,
+				GLfloat p8, GLfloat p9, GLfloat p10, GLfloat p11, 
 				GLfloat p12, GLfloat p13, GLfloat p14, GLfloat p15
 				)
 	{
@@ -652,17 +660,17 @@ char transposed = 0;
 	vec3 VectorSub(vec3 a, vec3 b)
 	{
 		vec3 result;
-
+		
 		result.x = a.x - b.x;
 		result.y = a.y - b.y;
 		result.z = a.z - b.z;
 		return result;
 	}
-
+	
 	vec3 VectorAdd(vec3 a, vec3 b)
 	{
 		vec3 result;
-
+		
 		result.x = a.x + b.x;
 		result.y = a.y + b.y;
 		result.z = a.z + b.z;
@@ -676,7 +684,7 @@ char transposed = 0;
 		result.x = a.y*b.z - a.z*b.y;
 		result.y = a.z*b.x - a.x*b.z;
 		result.z = a.x*b.y - a.y*b.x;
-
+		
 		return result;
 	}
 
@@ -688,11 +696,11 @@ char transposed = 0;
 	vec3 ScalarMult(vec3 a, GLfloat s)
 	{
 		vec3 result;
-
+		
 		result.x = a.x * s;
 		result.y = a.y * s;
 		result.z = a.z * s;
-
+		
 		return result;
 	}
 
@@ -722,7 +730,7 @@ char transposed = 0;
 
 		n = cross(VectorSub(a, b), VectorSub(a, c));
 		n = ScalarMult(n, 1/Norm(n));
-
+		
 		return n;
 	}
 
@@ -924,7 +932,7 @@ char transposed = 0;
 	vec3 MultMat3Vec3(mat3 a, vec3 b) // result = a * b
 	{
 		vec3 r;
-
+		
 		if (!transposed)
 		{
 			r.x = a.m[0]*b.x + a.m[1]*b.y + a.m[2]*b.z;
@@ -937,7 +945,7 @@ char transposed = 0;
 			r.y = a.m[1]*b.x + a.m[4]*b.y + a.m[7]*b.z;
 			r.z = a.m[2]*b.x + a.m[5]*b.y + a.m[8]*b.z;
 		}
-
+		
 		return r;
 	}
 
@@ -1049,12 +1057,12 @@ char transposed = 0;
 //	mat4 TransposeRotation(mat4 m)
 //	{
 //		mat4 a;
-//
+//		
 //		a.m[0] = m.m[0]; a.m[4] = m.m[1]; a.m[8] = m.m[2];      a.m[12] = m.m[12];
 //		a.m[1] = m.m[4]; a.m[5] = m.m[5]; a.m[9] = m.m[6];      a.m[13] = m.m[13];
 //		a.m[2] = m.m[8]; a.m[6] = m.m[9]; a.m[10] = m.m[10];    a.m[14] = m.m[14];
 //		a.m[3] = m.m[3]; a.m[7] = m.m[7]; a.m[11] = m.m[11];    a.m[15] = m.m[15];
-//
+//		
 //		return a;
 //	}
 
@@ -1062,12 +1070,12 @@ char transposed = 0;
 	mat4 transpose(mat4 m)
 	{
 		mat4 a;
-
+		
 		a.m[0] = m.m[0]; a.m[4] = m.m[1]; a.m[8] = m.m[2];      a.m[12] = m.m[3];
 		a.m[1] = m.m[4]; a.m[5] = m.m[5]; a.m[9] = m.m[6];      a.m[13] = m.m[7];
 		a.m[2] = m.m[8]; a.m[6] = m.m[9]; a.m[10] = m.m[10];    a.m[14] = m.m[11];
 		a.m[3] = m.m[12]; a.m[7] = m.m[13]; a.m[11] = m.m[14];    a.m[15] = m.m[15];
-
+		
 		return a;
 	}
 
@@ -1075,11 +1083,11 @@ char transposed = 0;
 	mat3 TransposeMat3(mat3 m)
 	{
 		mat3 a;
-
+		
 		a.m[0] = m.m[0]; a.m[3] = m.m[1]; a.m[6] = m.m[2];
 		a.m[1] = m.m[3]; a.m[4] = m.m[4]; a.m[7] = m.m[5];
 		a.m[2] = m.m[6]; a.m[5] = m.m[7]; a.m[8] = m.m[8];
-
+		
 		return a;
 	}
 
@@ -1129,13 +1137,13 @@ mat4 ArbRotate(vec3 axis, GLfloat fi)
 		R.m[12] = 0.0; R.m[13] = 0.0; R.m[14] = 0.0;  R.m[15] = 1.0;
 	}
 
-	Rt = Transpose(R); // Transpose = Invert -> felet ej i Transpose, och det \8Ar en ortonormal matris
+	Rt = Transpose(R); // Transpose = Invert -> felet ej i Transpose, och det Šr en ortonormal matris
 
 	Raxel = Rx(fi); // Rotate around x axis
 
 	// m := Rt * Rx * R
 	m = Mult(Mult(Rt, Raxel), R);
-
+	
 	return m;
 }
 
@@ -1144,7 +1152,7 @@ mat4 ArbRotate(vec3 axis, GLfloat fi)
 mat4 CrossMatrix(vec3 a) // Matrix for cross product
 {
 	mat4 m;
-
+	
 	if (transposed)
 	{
 		m.m[0] =    0; m.m[4] =-a.z; m.m[8] = a.y; m.m[12] = 0.0;
@@ -1163,18 +1171,18 @@ mat4 CrossMatrix(vec3 a) // Matrix for cross product
 		// NOTE! 0.0 in the homogous coordinate. Thus, the matrix can
 		// not be generally used, but is fine for matrix differentials
 	}
-
+	
 	return m;
 }
 
 mat4 MatrixAdd(mat4 a, mat4 b)
 {
 	mat4 dest;
-
+	
 	int i;
 	for (i = 0; i < 16; i++)
 		dest.m[i] = a.m[i] + b.m[i];
-
+	
 	return dest;
 }
 
@@ -1212,27 +1220,31 @@ mat4 lookAtv(vec3 p, vec3 l, vec3 v)
 	return m;
 }
 
-mat4 lookAt(GLfloat px, GLfloat py, GLfloat pz,
+mat4 lookAt(GLfloat px, GLfloat py, GLfloat pz, 
 			GLfloat lx, GLfloat ly, GLfloat lz,
 			GLfloat vx, GLfloat vy, GLfloat vz)
 {
 	vec3 p, l, v;
-
+	
 	p = SetVector(px, py, pz);
 	l = SetVector(lx, ly, lz);
 	v = SetVector(vx, vy, vz);
-
+	
 	return lookAtv(p, l, v);
 }
 
 // From http://www.opengl.org/wiki/GluPerspective_code
 // Changed names and parameter order to conform with VU style
 // Rewritten 120913 because it was all wrong...
-// Rewritten again 2022 to a more compact form.
+
+// Creates a projection matrix like gluPerspective or glFrustum.
+// Upload to your shader as usual.
+// Error fixed 20220525: 180, not 360!
+// Also made it conform to the reference manual.
 mat4 perspective(float fovyInDegrees, float aspectRatio,
                       float znear, float zfar)
 {
-	float f = 1/tan(fovyInDegrees * M_PI / 360.0);
+	float f = 1/tan(fovyInDegrees / 2);
 	mat4 m = SetMat4(f/aspectRatio, 0, 0, 0,
 					0, f, 0, 0,
 					0, 0, (zfar+znear)/(znear-zfar), 2*zfar*znear/(znear-zfar),
@@ -1247,7 +1259,7 @@ mat4 frustum(float left, float right, float bottom, float top,
 {
     float temp, temp2, temp3, temp4;
     mat4 matrix;
-
+    
     temp = 2.0f * znear;
     temp2 = right - left;
     temp3 = top - bottom;
@@ -1268,10 +1280,10 @@ mat4 frustum(float left, float right, float bottom, float top,
     matrix.m[13] = 0.0;
     matrix.m[14] = (-temp * zfar) / temp4; // D = -2fn / f-n
     matrix.m[15] = 0.0;
-
+    
     if (!transposed)
     	matrix = Transpose(matrix);
-
+    
     return matrix;
 }
 
@@ -1308,7 +1320,7 @@ mat3 InvertMat3(mat3 in)
 	float a11, a12, a13, a21, a22, a23, a31, a32, a33;
 	mat3 out, nanout;
 	float DET;
-
+	
 	// Copying to internal variables both clarify the code and
 	// buffers data so the output may be identical to the input!
 	a11 = in.m[0];
@@ -1340,7 +1352,7 @@ mat3 InvertMat3(mat3 in)
 								NAN, NAN, NAN);
 		out = nanout;
 	}
-
+	
 	return out;
 }
 
@@ -1352,7 +1364,7 @@ mat3 InverseTranspose(mat4 in)
 	float a11, a12, a13, a21, a22, a23, a31, a32, a33;
 	mat3 out, nanout;
 	float DET;
-
+	
 	// Copying to internal variables
 	a11 = in.m[0];
 	a12 = in.m[1];
@@ -1392,7 +1404,7 @@ mat3 InverseTranspose(mat4 in)
 mat3 mat4tomat3(mat4 m)
 {
 	mat3 result;
-
+	
 	result.m[0] = m.m[0];
 	result.m[1] = m.m[1];
 	result.m[2] = m.m[2];
@@ -1408,7 +1420,7 @@ mat3 mat4tomat3(mat4 m)
 mat4 mat3tomat4(mat3 m)
 {
 	mat4 result;
-
+	
 	result.m[0] = m.m[0];
 	result.m[1] = m.m[1];
 	result.m[2] = m.m[2];
@@ -1455,7 +1467,7 @@ vec4 vec3tovec4(vec3 v)
 mat4 InvertMat4(mat4 a)
 {
    mat4 b;
-
+     
    float c=a.m[0],d=a.m[1],e=a.m[2],g=a.m[3],
 	f=a.m[4],h=a.m[5],i=a.m[6],j=a.m[7],
 	k=a.m[8],l=a.m[9],o=a.m[10],m=a.m[11],
@@ -1521,9 +1533,101 @@ void printMat3(mat3 m)
 	printf(" ---------------------------------------------------------------\n");
 }
 
-void printVec3(vec3 in)
+void printVec3(vec3 in) 
 {
 	printf("(%f, %f, %f)\n", in.x, in.y, in.z);
+}
+
+/* Utility functions for easier uploads to shaders with error messages. */
+// NEW as prototype 2022, added to VU 2023
+
+#define NUM_ERRORS 8
+
+static void ReportError(const char *caller, const char *name)
+{
+	static unsigned int draw_error_counter = 0; 
+	if(draw_error_counter < NUM_ERRORS)
+	{
+		fprintf(stderr, "%s warning: '%s' not found in shader!\n", caller, name);
+		draw_error_counter++;
+	}
+	else if(draw_error_counter == NUM_ERRORS)
+	{
+		fprintf(stderr, "%s: Number of errors bigger than %i. No more vill be printed.\n", caller, NUM_ERRORS);
+		draw_error_counter++;
+	}
+}
+
+void uploadMat4ToShader(GLuint shader, const char *nameInShader, mat4 m)
+{
+	if (nameInShader == NULL) return;
+	glUseProgram(shader);
+	GLint loc = glGetUniformLocation(shader, nameInShader);
+	if (loc >= 0)
+		glUniformMatrix4fv(loc, 1, GL_TRUE, m.m);
+	else
+		ReportError("uploadMat4ToShader", nameInShader);
+}
+
+void uploadUniformIntToShader(GLuint shader, const char *nameInShader, GLint i)
+{
+	if (nameInShader == NULL) return;
+	glUseProgram(shader);
+	GLint loc = glGetUniformLocation(shader, nameInShader);
+	if (loc >= 0)
+		glUniform1i(loc, i);
+	else
+		ReportError("uploadUniformIntToShader", nameInShader);
+}
+
+void uploadUniformFloatToShader(GLuint shader, const char *nameInShader, GLfloat f)
+{
+	if (nameInShader == NULL) return;
+	glUseProgram(shader);
+	GLint loc = glGetUniformLocation(shader, nameInShader);
+	if (loc >= 0)
+		glUniform1f(loc, f);
+	else
+		ReportError("uploadUniformFloatToShader", nameInShader);
+}
+
+void uploadUniformFloatArrayToShader(GLuint shader, const char *nameInShader, GLfloat *f, int arrayLength)
+{
+	if (nameInShader == NULL) return;
+	glUseProgram(shader);
+	GLint loc = glGetUniformLocation(shader, nameInShader);
+	if (loc >= 0)
+		glUniform1fv(loc, arrayLength, f);
+	else
+		ReportError("uploadUniformFloatToShader", nameInShader);
+}
+
+void uploadUniformVec3ToShader(GLuint shader, const char *nameInShader, vec3 v)
+{
+	if (nameInShader == NULL) return;
+	glUseProgram(shader);
+	GLint loc = glGetUniformLocation(shader, nameInShader);
+	if (loc >= 0)
+		glUniform3f(loc, v.x, v.y, v.z);
+	else
+		ReportError("uploadUniformVec3ToShader", nameInShader);
+}
+
+void uploadUniformVec3ArrayToShader(GLuint shader, const char *nameInShader, vec3 *a, int arrayLength)
+{
+	if (nameInShader == NULL) return;
+	glUseProgram(shader);
+	GLint loc = glGetUniformLocation(shader, nameInShader);
+	if (loc >= 0)
+		glUniform3fv(loc, arrayLength, (GLfloat *)a);
+	else
+		ReportError("uploadUniformVec3ArrayToShader", nameInShader);
+}
+
+void bindTextureToTextureUnit(GLuint tex, int unit)
+{
+	glActiveTexture(GL_TEXTURE0 + unit);
+	glBindTexture(GL_TEXTURE_2D, tex);
 }
 
 #ifdef __cplusplus
@@ -1554,5 +1658,4 @@ mat4 lookAt(vec3 p, vec3 l, vec3 u)
 
 #endif
 #endif
-
 #endif

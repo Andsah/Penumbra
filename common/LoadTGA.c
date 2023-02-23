@@ -12,6 +12,8 @@
 // 180216: calloc is better than malloc when you may have undefined data in parts of the texture!
 // 190416: Skipped testing the last four bytes of the 12-byte heading. That is the origin of the
 // image which is usually 0. It is now ignored.
+// 220218: Big change: Removed the power of 2. GPUs with that limitation are gone now.
+// This simplifies both the code and the interface.
 
 // NOTE: LoadTGA does NOT support all TGA variants! You may need to re-save your TGA
 // with different settings to find a suitable format.
@@ -43,7 +45,7 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 		imageSize,		// Used To Store The Image Size When Setting Aside Ram
 		temp;			// Temporary Variable
 	long rowSize, stepSize, bytesRead;
-	long w, h;
+//	long w, h;
 	GLubyte *rowP;
 	int err;
 	GLubyte rle;
@@ -109,20 +111,21 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 		return false;
 	}
 	flipped = (header[5] & 32) != 0; // Testa om flipped
-	
-	w = 1;
-	while (w < texture->width) w = w << 1;
-	h = 1;
-	while (h < texture->height) h = h << 1;
-	texture->texWidth = (GLfloat)texture->width / w;
-	texture->texHeight = (GLfloat)texture->height / h;
+
+// That old power of 2 is no longer needed!
+//	w = 1;
+//	while (w < texture->width) w = w << 1;
+//	h = 1;
+//	while (h < texture->height) h = h << 1;
+//	texture->texWidth = (GLfloat)texture->width / w;
+//	texture->texHeight = (GLfloat)texture->height / h;
 	
 	
 	texture->bpp = header[4];		// Grab The TGA's Bits Per Pixel (24 or 32)
 	bytesPerPixel = texture->bpp/8;		// Divide By 8 To Get The Bytes Per Pixel
-	imageSize = w * h * bytesPerPixel;	// Calculate The Memory Required For The TGA Data
+	imageSize = texture->width * texture->height * bytesPerPixel;	// Calculate The Memory Required For The TGA Data
 	rowSize	= texture->width * bytesPerPixel;	// Image memory per row
-	stepSize = w * bytesPerPixel;		// Memory per row
+	stepSize = texture->width * bytesPerPixel;		// Memory per row
 	texture->imageData = (GLubyte *)calloc(1, imageSize);	// Reserve Memory To Hold The TGA Data
 	if (texture->imageData == NULL)				// Does The Storage Memory Exist?
 	{
@@ -133,7 +136,7 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 	// Set rowP and step depending on direction
 	// Inverted this 120131, since a texture came out wrong.
 	// I am still not sure this is OK.
-	if (!flipped)
+	if (flipped)
 	{
 		step = -stepSize;
 		rowP = &texture->imageData[imageSize - stepSize];
@@ -204,8 +207,8 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 	}
 	fclose (file);
 
-texture->w = w;
-texture->h = h;
+//texture->w = w;
+//texture->h = h;
 
 	return true;				// Texture loading Went Ok, Return True
 }
@@ -232,7 +235,7 @@ bool LoadTGATexture(const char *filename, TextureData *texture)	// Loads A TGA F
 	{
 		type=GL_RGB;			// If So Set The 'type' To GL_RGB
 	}
-	glTexImage2D(GL_TEXTURE_2D, 0, type, texture->w, texture->h, 0, type, GL_UNSIGNED_BYTE, texture[0].imageData);
+	glTexImage2D(GL_TEXTURE_2D, 0, type, texture->width, texture->height, 0, type, GL_UNSIGNED_BYTE, texture[0].imageData);
 	
 	if (gMipmap)
 	{
@@ -324,7 +327,8 @@ int SaveDataToTGA(char			*filename,
 
 	fclose(file);
 // release the memory
-	free(imageData);
+// No, this is the responsability of the host!
+//	free(imageData);
 
 	return(TGA_OK);
 }
