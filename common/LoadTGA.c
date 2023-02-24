@@ -49,11 +49,11 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 	GLubyte *rowP;
 	int err;
 	GLubyte rle;
-	int b;
+	unsigned b; //changed from int to unsigned
 	long row, rowLimit;
 	GLubyte pixelData[4];	
 	
-	// Nytt fšr flipping-stšd 111114
+	// Nytt fï¿½r flipping-stï¿½d 111114
 	char flipped;
 	long step;
 	
@@ -199,7 +199,7 @@ bool LoadTGATextureData(const char *filename, TextureData *texture)	// Loads A T
 	}
 
 	if (bytesPerPixel >= 3) // if not monochrome	
-	for (i = 0; i < (int)(imageSize); i += bytesPerPixel)	// Loop Through The Image Data
+	for (unsigned i = 0; i < imageSize; i += bytesPerPixel)	// Loop Through The Image Data                                                     MADE i UNSIGNED
 	{		// Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
 		temp = texture->imageData[i];		// Temporarily Store The Value At Image Data 'i'
 		texture->imageData[i] = texture->imageData[i + 2];	// Set The 1st Byte To The Value Of The 3rd Byte

@@ -1,6 +1,6 @@
 #version 150
 
-in  vec3 in_Position; // Look in lab 3 to remember what this was
+in vec3 in_Position; // Look in lab 3 to remember what this was
 in vec2 inTexCoord;
 
 uniform mat4 projectionMatrix;

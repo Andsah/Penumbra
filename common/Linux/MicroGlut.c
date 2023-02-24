@@ -478,7 +478,7 @@ void glutMainLoop()
 
          switch (event.type)
          {
-         	case ClientMessage:
+         	case ClientMessage: // comparing 'long int' to 'unsigned long int' gives warning
          		if (event.xclient.data.l[0] == wmDeleteMessage) // quit!
          			gRunning = 0;
 	         	break;

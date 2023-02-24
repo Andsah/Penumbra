@@ -253,14 +253,16 @@
 	} mat3;
 
 #ifdef __cplusplus
-	vec3::vec3(vec4 v) : x(v.x), y(v.y), z(v.z) {}
-	mat4::mat4(mat3 x)
-	{
-		m[0] = x.m[0]; m[1] = x.m[1]; m[2] = x.m[2]; m[3] = 0;
-		m[4] = x.m[3]; m[5] = x.m[4]; m[6] = x.m[5]; m[7] = 0;
-		m[8] = x.m[6]; m[9] = x.m[7]; m[10] = x.m[8]; m[11] = 0;
-		m[12] = x.m[0]; m[13] = x.m[0]; m[14] = x.m[0]; m[15] = 1;
-	}
+// This needed to be compiled only once - moved to implementation.
+// This most likely must be done with several more!
+//	vec3::vec3(vec4 v) : x(v.x), y(v.y), z(v.z) {}
+//	mat4::mat4(mat3 x)
+//	{
+//		m[0] = x.m[0]; m[1] = x.m[1]; m[2] = x.m[2]; m[3] = 0;
+//		m[4] = x.m[3]; m[5] = x.m[4]; m[6] = x.m[5]; m[7] = 0;
+//		m[8] = x.m[6]; m[9] = x.m[7]; m[10] = x.m[8]; m[11] = 0;
+//		m[12] = x.m[0]; m[13] = x.m[0]; m[14] = x.m[0]; m[15] = 1;
+//	}
 #endif
 
 //#ifdef __cplusplus
@@ -375,7 +377,7 @@
 #ifdef __cplusplus
 // Some C++ operator overloads
 // Non-member C++ operators!
-// New version 2021-05-2x: Constructiors for vec3 etc replaced in order to avoid
+// New version 2021-05-2x: Constructors for vec3 etc replaced in order to avoid
 // problems with some C++ compilers.
 
 // --- vec3 operations ---
@@ -1655,6 +1657,19 @@ mat4 lookAt(vec3 p, vec3 l, vec3 u)
 {
 	return lookAtv(p, l, u);
 }
+
+
+#ifdef __cplusplus
+	vec3::vec3(vec4 v) : x(v.x), y(v.y), z(v.z) {}
+	mat4::mat4(mat3 x)
+	{
+		m[0] = x.m[0]; m[1] = x.m[1]; m[2] = x.m[2]; m[3] = 0;
+		m[4] = x.m[3]; m[5] = x.m[4]; m[6] = x.m[5]; m[7] = 0;
+		m[8] = x.m[6]; m[9] = x.m[7]; m[10] = x.m[8]; m[11] = 0;
+		m[12] = x.m[0]; m[13] = x.m[0]; m[14] = x.m[0]; m[15] = 1;
+	}
+#endif
+
 
 #endif
 #endif
