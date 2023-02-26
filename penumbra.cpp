@@ -21,7 +21,7 @@
 // Object for handling player controls and camera movement
 Camera* playerCamera = new Camera();
 // Shaders
-GLuint skyboxShaders, terrainShaders, objectShaders;
+GLuint skyboxShaders, terrainShaders, objectsShaders;
 
 // Matrix for projecting the view onto the screen(?)
 mat4 projectionMatrix;
@@ -48,13 +48,15 @@ void init(void) {
 	glDisable(GL_CULL_FACE);
 	//printError("GL inits");
 
+	// Initiate vertex buffer, array buffer etc
+
 	// Set the projection to be perspective projection with a frustum
 	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 200.0);
 	
     // Load and compile shaders to use (One for skybox, one for terrain, one for game objects)
 	skyboxShaders = loadShaders("shaders/skybox.vert", "shaders/skybox.frag");
 	terrainShaders = loadShaders("shaders/terrain.vert", "shaders/terrain.frag");
-	objectShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
+	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
 
     // Initiate terrain - will probably make a separate file for this
 
