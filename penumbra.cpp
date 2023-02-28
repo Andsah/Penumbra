@@ -12,6 +12,8 @@
 // The main game file
 #define MAIN
 #include "camera.h"
+#include "gameObject.h"
+
 #include "MicroGlut.h"
 #include "GL_utilities.h"
 #include "VectorUtils4.h"
@@ -48,7 +50,7 @@ void init(void) {
 	glDisable(GL_CULL_FACE);
 	//printError("GL inits");
 
-	// Initiate vertex buffer, array buffer etc
+	// Initiate vertex buffer, array buffer etc (ACTUALLY handled by loading models)
 
 	// Set the projection to be perspective projection with a frustum
 	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 200.0);
@@ -59,10 +61,9 @@ void init(void) {
 	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
 
     // Initiate terrain - will probably make a separate file for this
-
+	
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
-	
 
     // Initiate lighting objects
 
