@@ -14,7 +14,7 @@ class GameObject
 {
 protected:
 
-    // Contains the vertexArray, normalArray, texCoordArray, indexArray as well as some more
+    // Contains the vertexArray, normalArray, texCoordArray, indexArray as well as some more things
     Model* meshData;
 
     // An array of 16 GLuints that each point to a loaded TGA texture

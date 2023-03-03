@@ -40,7 +40,7 @@ void GameObject::setShader(GLuint newShader) {
 
 void GameObject::Draw() {
     glUseProgram(shader); // why cant I get to these functions?
-    //glUniform1i(glGetUniformLocation(shader, "tex"), 0); - decide on indexed textures or a set number plus space for normals etc.
+    //glUniform1i(glGetUniformLocation(shader, "tex"), 0); - decide on indexed textures or a set number plus space for normal maps etc.
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelMatrix"), 1, GL_TRUE, transformMatrix.m);
 	DrawModel(meshData, shader, "inPosition", "inNormal", "inTexCoord");
 }
