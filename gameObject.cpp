@@ -3,13 +3,14 @@
 #include "VectorUtils4.h"
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
-#include "gameObject.h"
+#include "headers/gameObject.h"
 
-GameObject::GameObject(const char objFile[], std::array<const char *,16> textureFiles, GLuint shader, mat4 transformMatrix): 
+GameObject::GameObject(const char objFile[], std::array<const char *, NUM_TEX> textureFiles, GLuint shader, const char * normalMapFile, mat4 transformMatrix): 
     transformMatrix(transformMatrix),
-    shader(shader) 
+    shader(shader)
     {
-    meshData = LoadModel(objFile);
+    model = LoadModel(objFile);
+    if (normalMapFile != "") {LoadTGATextureSimple(normalMapFile, &normalMap);} // for detailed bumps on the texture
     for(unsigned i = 0; i < textureFiles.size(); i++) {
         LoadTGATextureSimple(textureFiles[i], &textures[i]);
         glBindTexture(GL_TEXTURE_2D, textures[i]);
@@ -19,11 +20,11 @@ GameObject::GameObject(const char objFile[], std::array<const char *,16> texture
 GameObject::GameObject(GLuint shader):shader(shader) {}
 
 GameObject::~GameObject() {
-    DisposeModel(meshData);
+    DisposeModel(model);
 }
 
-Model* GameObject::getMeshData() {
-    return meshData;
+Model* GameObject::getModel() {
+    return model;
 }
 
 void GameObject::setTransform(mat4 newTransform) {
@@ -42,5 +43,5 @@ void GameObject::Draw() {
     glUseProgram(shader); // why cant I get to these functions?
     //glUniform1i(glGetUniformLocation(shader, "tex"), 0); - decide on indexed textures or a set number plus space for normal maps etc.
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelMatrix"), 1, GL_TRUE, transformMatrix.m);
-	DrawModel(meshData, shader, "inPosition", "inNormal", "inTexCoord");
+	DrawModel(model, shader, "inPosition", "inNormal", "inTexCoord");
 }

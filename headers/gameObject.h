@@ -8,6 +8,8 @@
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
 
+#define NUM_TEX 8
+
 // perhaps inherited classes with extra features are smart for gameplay purposes.
 // A class for storing data about every object in the game
 class GameObject
@@ -15,10 +17,13 @@ class GameObject
 protected:
 
     // Contains the vertexArray, normalArray, texCoordArray, indexArray as well as some more things
-    Model* meshData;
+    Model* model;  
 
-    // An array of 16 GLuints that each point to a loaded TGA texture
-    std::array<GLuint,16>  textures;
+    // An array of GLuints that each point to a loaded TGA texture
+    std::array<GLuint,NUM_TEX>  textures; //TODO: SHOULD I MAKE A TEXTURE/MATERIAL CLASS TO ABSTRACT AWAY? then i can bundle each texture and eventual normal/spec map together.
+
+    // Optional NormalMap for the object
+    GLuint normalMap;
 
     // The gameObject's translation, rotation, and scale combined, expressed in world coordinates
     mat4 transformMatrix;
@@ -30,7 +35,7 @@ protected:
 
 public:
     // Take in the name of the .obj file, array of names of .tga files, a shader program, and optionally a mat4 transformation matrix
-    GameObject(const char objFile[], std::array<const char *,16> texturesFiles, GLuint shader, mat4 transformMatrix = T(0,0,0));
+    GameObject(const char objFile[], std::array<const char *, NUM_TEX> texturesFiles, GLuint shader, const char * normalMapFile = "", mat4 transformMatrix = T(0,0,0));
 
     // Overload for terrain class's sake
     GameObject(GLuint shader);
@@ -39,7 +44,7 @@ public:
     ~GameObject();
 
     // Return a reference to the data Model object
-    Model* getMeshData();
+    Model* getModel();
 
     // Set a new transformation to be the transformation of the gameObject
     void setTransform(mat4 newTransform);

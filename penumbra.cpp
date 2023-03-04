@@ -11,8 +11,8 @@
 */
 // The main game file
 #define MAIN
-#include "camera.h"
-#include "gameObject.h"
+#include "headers/camera.h"
+//#include "gameObject.h"
 
 #include "MicroGlut.h"
 #include "GL_utilities.h"
@@ -110,6 +110,8 @@ int main(int argc, char **argv) {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
 	glutInitContextVersion(3, 2);
 	glutInitWindowSize(WIN_W, WIN_H);
+
+	//printf("%d vs %d", sizeof(GLfloat), sizeof(vec3));
 
 	glutCreateWindow("Penumbra™ Definitive Edition GOTY™ Edition Collector's Edition");
 	glutDisplayFunc(display);

@@ -1,4 +1,4 @@
-#include "camera.h"
+#include "headers/camera.h"
 #include "MicroGlut.h"
 #include "GL_utilities.h"
 #include "VectorUtils4.h"
