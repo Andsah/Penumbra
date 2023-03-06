@@ -7,21 +7,17 @@
 #include "headers/terrain.h"
 #include "headers/array2d.h"
 
-Terrain::Terrain(const char heightMap[], std::array<const char *,NUM_TEX> textureFiles, GLuint shader, const char * normalMapFile): 
-GameObject(shader) {
+Terrain::Terrain(const char * heightMap, std::array<Texture *,NUM_TEX> textures, GLuint shader): 
+GameObject(textures, shader) {
     TextureData ttex;
     LoadTGATextureData(heightMap, &ttex);
-    if (normalMapFile != "") {LoadTGATextureSimple(normalMapFile, &normalMap);} // for detailed bumps on the texture
     model = generateTerrain(&ttex);
-    for(unsigned i = 0; i < textureFiles.size(); i++) {
-        LoadTGATextureSimple(textureFiles[i], &textures[i]);
-        glBindTexture(GL_TEXTURE_2D, textures[i]);
-    }
+    //printf("%f, %f, %f\n", model->vertexArray[899].x, model->vertexArray[899].y, model->vertexArray[899].z);
 }
 
 Model * Terrain::generateTerrain(TextureData * hMap) {
-    int width = hMap->width;
-    int height = hMap->height;
+    unsigned int width = hMap->width;
+    unsigned int height = hMap->height;
 
     // The number of vertices in the map is the height * width as one pixel represents one vertex
     int vertexCount = width * height;
@@ -46,7 +42,7 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
     for (x = 0; x < width; x++) {
         for (z = 0; z < height; z++) {
             // Initialise the vertex array, using the height map for y values
-            vArray.Set(x, z, vec3(x, hMap->imageData[(x + z * width) * (hMap->bpp/8)] / 20, z));
+            vArray.Set(x, z, vec3(x, hMap->imageData[(x + z * width) * (hMap->bpp/8)] / 20.0, z)); // dividing by float seems to be important for interpolating
             // Initialise the texture array, standard coordinates
             tArray.Set(x, z, vec2(x, z));
         }
@@ -62,7 +58,13 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
             // Current vertex to calculate the normal for
             p = vArray.Get(x, z);
 
-			up, down, left, right, upRight, downleft, nTot = vec3(0,0,0);
+			up = vec3(0,0,0);
+            down = vec3(0,0,0);
+            left = vec3(0,0,0);
+            right = vec3(0,0,0);
+            upRight = vec3(0,0,0); 
+            downleft = vec3(0,0,0); 
+            nTot = vec3(0,0,0);
 
             // Check what faces can contribute to calculation of the normal vector at x, z
             // Think they are calculated in a way so they can never point down TODO: needs to be tested though
@@ -110,17 +112,20 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
 
     // Create the indices needed to describe the triangles that make up the model
     for (x = 0; x < width - 1; x++) {
-        for (z = 0; z < (height - 1) * 6; z++) { // are these triangle-diagonals leaning to the left instead? TODO: find out
+        for (z = 0; z < (height - 1); z++) { // are these triangle-diagonals leaning to the left instead? TODO: find out
             // Triangle 1
-			iArray.Set(x + z * (width-1)*6 + 0, x + z * width);
-            iArray.Set(x + z * (width-1)*6 + 1, x + (z + 1) * width);
-            iArray.Set(x + z * (width-1)*6 + 2, x + 1 + z * width);
+			iArray.Set((x + z * (width-1)) * 6 + 0, x + z * width);
+            iArray.Set((x + z * (width-1)) * 6 + 1, x + (z + 1) * width);
+            iArray.Set((x + z * (width-1)) * 6 + 2, x + 1 + z * width);
 		    // Triangle 2
-            iArray.Set(x + z * (width-1)*6 + 3, x + 1 + z * width);
-            iArray.Set(x + z * (width-1)*6 + 4, x + (z + 1) * width);
-            iArray.Set(x + z * (width-1)*6 + 5, x + 1 + (z + 1) * width);
+            iArray.Set((x + z * (width-1)) * 6 + 3, x + 1 + z * width);
+            iArray.Set((x + z * (width-1)) * 6 + 4, x + (z + 1) * width);
+            iArray.Set((x + z * (width-1)) * 6 + 5, x + 1 + (z + 1) * width);
         }
     }
+
+    //iArray.PrintFloat();
+
 
     Model* terrainModel = LoadDataToModel(
 			vArray.GetBaseAddr(),

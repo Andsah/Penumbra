@@ -12,13 +12,17 @@
 // The main game file
 #define MAIN
 #include "headers/camera.h"
-//#include "gameObject.h"
+#include "headers/gameObject.h"
+#include "headers/light.h"
+#include "headers/terrain.h"
 
 #include "MicroGlut.h"
 #include "GL_utilities.h"
 #include "VectorUtils4.h"
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
+
+#include <array>
 
 // Object for handling player controls and camera movement
 Camera* playerCamera = new Camera();
@@ -35,6 +39,8 @@ mat4 world2viewMatrix;
 void bindCamera(int x, int y) {playerCamera->calcLookAt(x, y);}
 
 // TODO: make classes/structs for light source, game objects, portals etc.
+
+Terrain * terrain;
 
 
 /*      ___          _   _   
@@ -53,14 +59,24 @@ void init(void) {
 	// Initiate vertex buffer, array buffer etc (ACTUALLY handled by loading models)
 
 	// Set the projection to be perspective projection with a frustum
-	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 200.0);
+	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0);
 	
     // Load and compile shaders to use (One for skybox, one for terrain, one for game objects)
 	skyboxShaders = loadShaders("shaders/skybox.vert", "shaders/skybox.frag");
 	terrainShaders = loadShaders("shaders/terrain.vert", "shaders/terrain.frag");
 	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
+	glUseProgram(terrainShaders);
+	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
 
     // Initiate terrain - will probably make a separate file for this
+
+	Texture * grass = new Texture("assets/tga_files/grass.tga", "assets/tga_files/grass_normal.tga", "assets/tga_files/grass_normal.tga");
+
+	std::array<Texture *, NUM_TEX> texList {nullptr};
+
+	texList[0] = grass;
+
+	terrain = new Terrain("assets/tga_files/fft-terrain.tga", texList, terrainShaders);
 	
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
@@ -85,14 +101,19 @@ void display(void) {
 	// clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	//printf("(%f, %f, %f)\n", playerCamera->cameraPos.x, playerCamera->cameraPos.y, playerCamera->cameraPos.z);
+
 	// Build the world-to-view matrix every tick
 	world2viewMatrix = lookAtv(playerCamera->cameraPos, playerCamera->lookAtPos, playerCamera->upVec);
-
+	glUseProgram(terrainShaders);
+	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
+	
 	// Draw skybox (remember to turn off depth buffer)
 
 
 	// Draw terrain
 
+	terrain->Draw();
 
 	// Draw objects
 

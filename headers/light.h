@@ -6,10 +6,12 @@
 #include "VectorUtils4.h"
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
-#include "gameObject.h"
 
 // Respresents a lightsource in the game. Can be positional or directional
 struct Light {
+
+    // Let there be light
+    Light(vec3 diffuse, vec3 ambient, vec3 qualia, bool is_positional, vec3 specular = vec3(1.0f));
 
     // The diffuse colour of the light
     vec3 diffuse;
@@ -26,8 +28,6 @@ struct Light {
     // Is the light at a specific location or shining in a specific direction?
     bool is_positional;
 
-    // Let there be light
-    Light(vec3 diffuse, vec3 ambient, vec3 qualia, bool is_positional, vec3 specular = vec3(1.0f));
 };
 
 #endif

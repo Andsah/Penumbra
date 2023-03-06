@@ -3,7 +3,6 @@
 #include "VectorUtils4.h"
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
-#include "gameObject.h"
 
 #include "headers/light.h"
 

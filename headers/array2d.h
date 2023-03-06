@@ -34,17 +34,12 @@ class Array2D {
         m_p = (Type*)malloc(Cols * Rows * sizeof(Type));
     }
 
-    // Destructor, frees the memory
-    ~Array2D() {
-        if (m_p) {
-            free(m_p);
-            m_p = NULL;
-        }
-    }
+    // Destructor, frees the memory - not needed here
+    ~Array2D() {}
 
     // Check to see if an address is valid (within the allowed col and row numbers)
     bool isValid(int Col, int Row) const {
-        return !(Col < 0 || Col >= m_cols || Row < 0 || Row >= m_rows) 
+        return !(Col < 0 || Col >= m_cols || Row < 0 || Row >= m_rows);
     }
 
     // Returns a reference to the element found at col and row
@@ -152,8 +147,8 @@ class Array2D {
         for (int y = 0 ; y < m_rows ; y++) {
             printf("%d: ", y);
             for (int x = 0 ; x < m_cols ; x++) {
-                float f = (float)m_p[y * m_cols + x];
-                printf("%.6f ", f);
+                GLuint f = (GLuint)m_p[y * m_cols + x];
+                printf("(%d) ", f);
             }
             printf("\n");
         }
