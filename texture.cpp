@@ -25,7 +25,7 @@ Texture::Texture(const char * diffuseFile, const char * normalFile, const char *
 void Texture::loadTextureToShader(GLuint shader) {
     glUseProgram(shader);
 
-    glUniform1i(glGetUniformLocation(shader, "textureMap"), 0);
+    glUniform1i(glGetUniformLocation(shader, "textureMap"), 0); // should switch to the GLuint for the tex - 1 maybe
 
     glUniform1i(glGetUniformLocation(shader, "normalMap"), 1);
 

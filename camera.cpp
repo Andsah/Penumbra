@@ -14,15 +14,15 @@ void Camera::calcLookAt(int x, int y) {
         vec3 trueUp = normalize(CrossProduct(forward, rightVec));
         lookAtPos = cameraPos + normalize(forward + ((x - WIN_W/2) * rightVec + (y - WIN_H/2) * trueUp)*cameraSensitivity); 
         // find way to let screen dimensions be arbitrary
-        // and why its not working on my windows/ubuntu setup
+        // and why its not working on my windows/ubuntu setup - or thinlinc
         glutWarpPointer(WIN_W/2, WIN_H/2);
     }
 }
 
 void Camera::checkKeyboardInput() {
     vec3 forward = normalize(lookAtPos - cameraPos);
-    vec3 rightVec = normalize(CrossProduct(forward, upVec)); // Idk if I should update this to trueUp or limit the camera viewing angles 
-    //vec3 trueUp = normalize(CrossProduct(forward, rightVec));
+    vec3 rightVec = normalize(CrossProduct(forward, upVec)); 
+    // Idk if I should update this to trueUp or limit the camera viewing angles // NO that was not it lol
     if (glutKeyIsDown('w')) { 
         cameraPos = cameraPos + forward * moveDist; 
         // to make player a fixed height off ground, 

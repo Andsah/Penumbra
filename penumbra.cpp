@@ -56,27 +56,32 @@ void init(void) {
 	glDisable(GL_CULL_FACE);
 	//printError("GL inits");
 
-	// Initiate vertex buffer, array buffer etc (ACTUALLY handled by loading models)
+	// Load and compile shaders to use (One for skybox, one for terrain, one for game objects)
+	skyboxShaders = loadShaders("shaders/skybox.vert", "shaders/skybox.frag");
+	terrainShaders = loadShaders("shaders/terrain.vert", "shaders/terrain.frag");
+	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
 
 	// Set the projection to be perspective projection with a frustum
 	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0);
 	
-    // Load and compile shaders to use (One for skybox, one for terrain, one for game objects)
-	skyboxShaders = loadShaders("shaders/skybox.vert", "shaders/skybox.frag");
-	terrainShaders = loadShaders("shaders/terrain.vert", "shaders/terrain.frag");
-	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
+	glUseProgram(skyboxShaders);
+	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+
 	glUseProgram(terrainShaders);
 	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
 
+	glUseProgram(objectsShaders);
+	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+
     // Initiate terrain - will probably make a separate file for this
 
-	Texture * grass = new Texture("assets/tga_files/grass.tga", "assets/tga_files/grass_normal.tga", "assets/tga_files/grass_normal.tga");
+	Texture * grass = new Texture("assets/tga_files/brick02.tga", "assets/tga_files/brick02_normal.tga", "assets/tga_files/grass_normal.tga");
 
 	std::array<Texture *, NUM_TEX> texList {nullptr};
 
 	texList[0] = grass;
 
-	terrain = new Terrain("assets/tga_files/fft-terrain.tga", texList, terrainShaders);
+	terrain = new Terrain("assets/tga_files/fft-terrain.tga", texList, terrainShaders); // 1204c so big it lags - frustum culling pls lol
 	
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
@@ -105,8 +110,14 @@ void display(void) {
 
 	// Build the world-to-view matrix every tick
 	world2viewMatrix = lookAtv(playerCamera->cameraPos, playerCamera->lookAtPos, playerCamera->upVec);
+	glUseProgram(skyboxShaders);
+	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
+
 	glUseProgram(terrainShaders);
 	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
+
+	glUseProgram(objectsShaders);
+	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
 	
 	// Draw skybox (remember to turn off depth buffer)
 

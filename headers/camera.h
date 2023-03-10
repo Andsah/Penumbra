@@ -30,6 +30,9 @@ struct Camera {
     // Check to make sure the game only switches pause-state once per keypress
     bool pPressed {false};
 
+    // rework camera to use pitch and yaw and be limited vertically. also the whole walk on the plane thing
+    // maybe raycast straight down and pass object and x,y coords to calc height?
+
     // Calculates the next look-at point based on the coordinates (x, y) of the of the mouse pointer
     void calcLookAt(int x, int y);
     // Function for handling inputs from the keyboard
