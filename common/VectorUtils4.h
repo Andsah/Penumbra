@@ -380,6 +380,19 @@
 // New version 2021-05-2x: Constructors for vec3 etc replaced in order to avoid
 // problems with some C++ compilers.
 
+// --- vec2 operations --- hello Andreas Sahlin here
+inline
+vec2 operator+(const vec2 &a, const vec2 &b) // vec2+vec2
+{
+	return SetVec2(a.x+b.x, a.y+b.y);
+}
+
+inline
+vec2 operator-(const vec2 &a, const vec2 &b) // vec2-vec2
+{
+	return SetVec2(a.x-b.x, a.y-b.y);
+}
+
 // --- vec3 operations ---
 inline
 vec3 operator+(const vec3 &a, const vec3 &b) // vec3+vec3
@@ -1139,7 +1152,7 @@ mat4 ArbRotate(vec3 axis, GLfloat fi)
 		R.m[12] = 0.0; R.m[13] = 0.0; R.m[14] = 0.0;  R.m[15] = 1.0;
 	}
 
-	Rt = Transpose(R); // Transpose = Invert -> felet ej i Transpose, och det Šr en ortonormal matris
+	Rt = Transpose(R); // Transpose = Invert -> felet ej i Transpose, och det ï¿½r en ortonormal matris
 
 	Raxel = Rx(fi); // Rotate around x axis
 

@@ -1,6 +1,8 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
+#define MAX_LIGHTS 10
+
 #include "MicroGlut.h"
 #include "GL_utilities.h"
 #include "VectorUtils4.h"
@@ -27,6 +29,9 @@ struct Light {
 
     // Is the light at a specific location or shining in a specific direction?
     bool is_positional;
+
+    // uploads the light to the passed shader
+    void uploadLight(GLuint shader, int index);
 
 };
 

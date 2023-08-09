@@ -9,6 +9,7 @@
 #include "LoadTGA.h"
 
 #include "texture.h"
+#include "array2d.h"
 
 #define NUM_TEX 8
 
@@ -26,6 +27,9 @@ protected:
 
     // The gameObject's translation, rotation, and scale combined, expressed in world coordinates
     mat4 transformMatrix;
+
+    // Normal matrix to not distort normals
+    mat3 normalMatrix;
     
     // Reference to the shader to be used during drawing
     GLuint shader;

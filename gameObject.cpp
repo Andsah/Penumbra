@@ -9,7 +9,9 @@ GameObject::GameObject(const char * objFile, std::array<Texture *, NUM_TEX> text
     transformMatrix(transformMatrix),
     shader(shader),
     textures(textures)
-    { model = LoadModel(objFile);}
+    { model = LoadModel(objFile);
+    normalMatrix = mat3(transpose(inverse(transformMatrix)));
+    }
 
 GameObject::GameObject(std::array<Texture *, NUM_TEX> textures, GLuint shader):
 transformMatrix(S(1)),
@@ -43,5 +45,6 @@ void GameObject::Draw() {
         }
     }
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelMatrix"), 1, GL_TRUE, transformMatrix.m);
+    glUniformMatrix3fv(glGetUniformLocation(shader, "normalMatrix"), 1, GL_TRUE, normalMatrix.m); // might not be needed anymore because of in-shader matrix
 	DrawModel(model, shader, "inPosition", "inNormal", "inTexCoord");
 }

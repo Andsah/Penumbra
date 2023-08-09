@@ -23,6 +23,8 @@
 #include "LoadTGA.h"
 
 #include <array>
+#include <vector>
+#include <string>
 
 // Object for handling player controls and camera movement
 Camera* playerCamera = new Camera();
@@ -42,6 +44,8 @@ void bindCamera(int x, int y) {playerCamera->calcLookAt(x, y);}
 
 Terrain * terrain;
 
+std::vector<Light *> lights;
+
 
 /*      ___          _   _   
  *     |_ _|  _ _   |_| | |_ 
@@ -53,7 +57,7 @@ void init(void) {
     // GL inits
 	glClearColor(0.2,0.2,0.7,0);
 	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	//printError("GL inits");
 
 	// Load and compile shaders to use (One for skybox, one for terrain, one for game objects)
@@ -88,6 +92,9 @@ void init(void) {
 
     // Initiate lighting objects
 
+	Light * testLight = new Light(vec3(0.5f,0.5f,0.5f), vec3(0.3f,0.1f,0.1f), vec3(10, 5, 10), true);
+	lights.push_back(testLight);
+
 
     // Perhaps more things to initiate
 
@@ -118,6 +125,15 @@ void display(void) {
 
 	glUseProgram(objectsShaders);
 	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
+
+	//Upload lights to objects and terrain shaders
+
+	for(int i = 0; i < lights.size(); i++) {
+		glUseProgram(terrainShaders);
+		lights[i]->uploadLight(terrainShaders, i);
+		//glUseProgram(objectsShaders);
+		//lights[i]->uploadLight(objectsShaders, i);
+	}
 	
 	// Draw skybox (remember to turn off depth buffer)
 

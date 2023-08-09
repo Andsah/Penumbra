@@ -34,9 +34,16 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
     // The coordinates of the terrain grid, also used for texture coordinates, normals etc.
 	unsigned int x, z;
 
+    // vertexArray
     Array2D<vec3> vArray = Array2D<vec3>(width, height);
+    // normalArray
     Array2D<vec3> nArray = Array2D<vec3>(width, height);
+    // textureArray"
     Array2D<vec2> tArray = Array2D<vec2>(width, height);
+    // make tanArray and BiArray for the tangent and bitangent
+    Array2D<vec3> tanArray = Array2D<vec3>(width, height);
+    Array2D<vec3> biArray = Array2D<vec3>(width, height);
+    //indexArray
     Array2D<GLuint> iArray = Array2D<GLuint>(width - 1, (height - 1) * 6); // product = triangleCount * 3
 
     for (x = 0; x < width; x++) {
@@ -112,7 +119,7 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
 
     // Create the indices needed to describe the triangles that make up the model
     for (x = 0; x < width - 1; x++) {
-        for (z = 0; z < (height - 1); z++) { // are these triangle-diagonals leaning to the left instead? TODO: find out
+        for (z = 0; z < (height - 1); z++) {
             // Triangle 1
 			iArray.Set((x + z * (width-1)) * 6 + 0, x + z * width);
             iArray.Set((x + z * (width-1)) * 6 + 1, x + (z + 1) * width);
@@ -124,7 +131,49 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
         }
     }
 
-    //iArray.PrintFloat();
+    // Create the tangents and bitangents for each normal vector
+
+    // texture coordinates - these are like always the ones right? might need to use tArray
+    vec2 uv1(0.0, 1.0);
+    vec2 uv2(0.0, 0.0);
+    vec2 uv3(1.0, 0.0);
+    vec2 uv4(1.0, 1.0);
+
+    // for each triangle in the model, get the delta_x and delta_y aka the edges from the first node to the two other nodes in the triangle
+    for(int i = 0; i < iArray.GetSize() - 2; i += 3) {
+
+        vec3 tangent = vec3(0,0,0);
+        vec3 bitangent = vec3(0,0,0);
+
+        // get the deltas in the triangle and the texture coordinates 
+        vec3 edge1 = vArray.Get(iArray.Get(i + 1)) - vArray.Get(iArray.Get(i));
+        vec3 edge2 = vArray.Get(iArray.Get(i + 2)) - vArray.Get(iArray.Get(i));
+        vec2 deltaUV1 = uv2 - uv1;
+        vec2 deltaUV2 = uv3 - uv1;
+
+        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+        tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+        tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+        tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+        bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+        bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+        bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+        // set the tangent for the 3 vertices
+        tanArray.Set(iArray.Get(i), tangent);
+        tanArray.Set(iArray.Get(i + 1), tangent);
+        tanArray.Set(iArray.Get(i + 2), tangent);
+
+        // set the bitangent for the 3 vertices
+        biArray.Set(iArray.Get(i), bitangent);
+        biArray.Set(iArray.Get(i + 1), bitangent);
+        biArray.Set(iArray.Get(i + 2), bitangent);
+    }
+
+
+    // Need to edit the model to take tangent and bitangent
 
 
     Model* terrainModel = LoadDataToModel(

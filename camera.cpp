@@ -14,7 +14,7 @@ void Camera::calcLookAt(int x, int y) {
         vec3 trueUp = normalize(CrossProduct(forward, rightVec));
         lookAtPos = cameraPos + normalize(forward + ((x - WIN_W/2) * rightVec + (y - WIN_H/2) * trueUp)*cameraSensitivity); 
         // find way to let screen dimensions be arbitrary
-        // and why its not working on my windows/ubuntu setup - or thinlinc
+        // and why its not working on my windows/ubuntu setup - or thinlinc - got ubuntu now so no worries
         glutWarpPointer(WIN_W/2, WIN_H/2);
     }
 }
