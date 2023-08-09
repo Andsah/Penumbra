@@ -182,6 +182,8 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
 			tArray.GetBaseAddr(),
 			NULL,
 			iArray.GetBaseAddr(),
+            tanArray.GetBaseAddr(),
+            biArray.GetBaseAddr(),
 			vertexCount,
 			triangleCount*3);
 

@@ -3,6 +3,7 @@
 in vec2 texCoord;
 in vec4 surfacePos;
 in vec3 surfaceNormal;
+in mat3 TBNMatrix;
 
 uniform sampler2D textureMap;
 uniform sampler2D normalMap;
@@ -36,7 +37,7 @@ void main(void)
 	// diffuse
 	vec3 lightPos = vec3(viewMatrix * vec4(lightPos[i], 1.0));
 	vec3 s = normalize(lightPos - vec3(surfacePos));
-	vec3 n = normalize(surfaceNormal); // + TBNMatrix * texture(normalMap, texCoord).rgb);
+	vec3 n = normalize(surfaceNormal + mat3(transpose(inverse(viewMatrix * modelMatrix))) * TBNMatrix * texture(normalMap, texCoord).rgb);
 	float diff = clamp(dot(n, s), 0, 1);
 	diffuse += diff * lightDiff[i];
 

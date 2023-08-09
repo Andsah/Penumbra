@@ -46,5 +46,5 @@ void GameObject::Draw() {
     }
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelMatrix"), 1, GL_TRUE, transformMatrix.m);
     glUniformMatrix3fv(glGetUniformLocation(shader, "normalMatrix"), 1, GL_TRUE, normalMatrix.m); // might not be needed anymore because of in-shader matrix
-	DrawModel(model, shader, "inPosition", "inNormal", "inTexCoord");
+	DrawModel(model, shader, "inPosition", "inNormal", "inTexCoord", "inTangent", "inBitangent");
 }

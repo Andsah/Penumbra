@@ -116,7 +116,7 @@ void display(void) {
 	//printf("(%f, %f, %f)\n", playerCamera->cameraPos.x, playerCamera->cameraPos.y, playerCamera->cameraPos.z);
 
 	// Build the world-to-view matrix every tick
-	world2viewMatrix = lookAtv(playerCamera->cameraPos, playerCamera->lookAtPos, playerCamera->upVec);
+	world2viewMatrix = lookAtv(playerCamera->cameraPos, playerCamera->lookAtPos, playerCamera->upVec); // precalc inverse view*model mat instead of doing expensively in shader and save to models.
 	glUseProgram(skyboxShaders);
 	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
 

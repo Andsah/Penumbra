@@ -44,13 +44,15 @@ typedef struct
   vec2* texCoordArray;
   vec3* colorArray; // Rarely used
   GLuint* indexArray;
+  vec3* tanArray; // Andreas Sahlin here
+  vec3* biArray;  // and here! Hope this extension works
   int numVertices;
   int numIndices;
   char externalData;
   
   // Space for saving VBO and VAO IDs
   GLuint vao; // VAO
-  GLuint vb, ib, nb, tb; // VBOs
+  GLuint vb, ib, nb, tb, tanb, bib; // VBOs - tanb and bib added by Andreas Sahlin
   
   Mtl *material;
 } Model;
@@ -62,6 +64,7 @@ Model** LoadModelSet(const char* name);  // Multi-part OBJ!
 
 // Drawing models
 void DrawModel(Model *m, GLuint program, const char* vertexVariableName, const char* normalVariableName, const char* texCoordVariableName);
+void DrawModel(Model *m, GLuint program, const char* vertexVariableName, const char* normalVariableName, const char* texCoordVariableName, const char* tanVariableName, const char* biVariableName); // andreas sahlin
 void DrawWireframeModel(Model *m, GLuint program, const char* vertexVariableName, const char* normalVariableName, const char* texCoordVariableName);
 
 // Utility functions that you may need if you want to modify the model.
@@ -72,6 +75,8 @@ Model* LoadDataToModel(
 			vec2 *texCoords,
 			vec3 *colors,
 			GLuint *indices,
+			vec3 *tangents,	   // andreas sahlin
+			vec3 *bitangents, // andreas sahlin
 			int numVert,
 			int numInd);
 void ReloadModelData(Model *m);
@@ -1244,6 +1249,82 @@ void DrawModel(Model *m, GLuint program, const char* vertexVariableName, const c
 	}
 }
 
+// ANDREAS SAHLIN DRAW MODEL WITH TANGENT AND BITANGENT
+void DrawModel(Model *m, GLuint program, const char* vertexVariableName, const char* normalVariableName, const char* texCoordVariableName, const char* tanVariableName, const char* biVariableName)
+{
+	if (m != NULL)
+	{
+		GLint loc;
+		
+		glBindVertexArray(m->vao);	// Select VAO
+		glUseProgram(program); // Added 2022-03
+
+		glBindBuffer(GL_ARRAY_BUFFER, m->vb);
+		loc = glGetAttribLocation(program, vertexVariableName);
+		if (loc >= 0)
+		{
+			glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, 0); 
+			glEnableVertexAttribArray(loc);
+		}
+		else
+			LOLError("DrawModel", vertexVariableName);
+		
+		if (normalVariableName!=NULL)
+		{
+			loc = glGetAttribLocation(program, normalVariableName);
+			if (loc >= 0)
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, m->nb);
+				glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+				glEnableVertexAttribArray(loc);
+			}
+			else
+				LOLError("DrawModel", normalVariableName);
+		}
+	
+		if ((m->texCoordArray != NULL)&&(texCoordVariableName != NULL))
+		{
+			loc = glGetAttribLocation(program, texCoordVariableName);
+			if (loc >= 0)
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, m->tb);
+				glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+				glEnableVertexAttribArray(loc);
+			}
+			else
+				LOLError("DrawModel", texCoordVariableName);
+		}
+
+		if (tanVariableName!=NULL)
+		{
+			loc = glGetAttribLocation(program, tanVariableName);
+			if (loc >= 0)
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, m->tanb);
+				glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+				glEnableVertexAttribArray(loc);
+			}
+			else
+				LOLError("DrawModel", tanVariableName);
+		}
+
+		if (biVariableName!=NULL)
+		{
+			loc = glGetAttribLocation(program, biVariableName);
+			if (loc >= 0)
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, m->bib);
+				glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+				glEnableVertexAttribArray(loc);
+			}
+			else
+				LOLError("DrawModel", biVariableName);
+		}
+
+		glDrawElements(GL_TRIANGLES, m->numIndices, GL_UNSIGNED_INT, 0L);
+	}
+}
+
 void DrawWireframeModel(Model *m, GLuint program, const char* vertexVariableName, const char* normalVariableName, const char* texCoordVariableName)
 {
 	if (m != NULL)
@@ -1316,6 +1397,18 @@ void ReloadModelData(Model *m)
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ib);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m->numIndices*sizeof(GLuint), m->indexArray, GL_STATIC_DRAW);
+
+	// VBO for tangent data ANDREAS SAHLIN
+	if (m->tanArray != NULL) {
+		glBindBuffer(GL_ARRAY_BUFFER, m->tanb);
+		glBufferData(GL_ARRAY_BUFFER, m->numVertices * 3 * sizeof(GLfloat), m->tanArray, GL_STATIC_DRAW);
+	}
+
+	// VBO for tangent data ANDREAS SAHLIN
+	if (m->biArray != NULL) {
+		glBindBuffer(GL_ARRAY_BUFFER, m->bib);
+		glBufferData(GL_ARRAY_BUFFER, m->numVertices * 3 * sizeof(GLfloat), m->biArray, GL_STATIC_DRAW);
+	}
 }
 
 static void GenModelBuffers(Model *m)
@@ -1326,6 +1419,9 @@ static void GenModelBuffers(Model *m)
 	glGenBuffers(1, &m->nb);
 	if (m->texCoordArray != NULL)
 		glGenBuffers(1, &m->tb);
+	
+	glGenBuffers(1, &m->tanb); // andreas sahlin
+	glGenBuffers(1, &m->bib); // andreas sahlin
 
 	ReloadModelData(m);
 }
@@ -1382,6 +1478,8 @@ Model* LoadDataToModel(
 			vec2 *texCoords,
 			vec3 *colors,
 			GLuint *indices,
+			vec3 *tangents, // andreas Sahlin
+			vec3 *bitangents, // andreas Sahlin
 			int numVert,
 			int numInd)
 {
@@ -1392,6 +1490,8 @@ Model* LoadDataToModel(
 	m->texCoordArray = texCoords;
 	m->normalArray = normals;
 	m->indexArray = indices;
+	m->tanArray = tangents; // Andreas Sahlin
+	m->biArray = bitangents; // Andreas Sahlin
 	m->numVertices = numVert;
 	m->numIndices = numInd;
 	m->externalData = 1;
@@ -1418,6 +1518,10 @@ void DisposeModel(Model *m)
 				free(m->colorArray);
 			if (m->indexArray != NULL)
 				free(m->indexArray);
+			if (m->tanArray != NULL) // andreas sahlin - and bi array delete too
+				free(m->tanArray);
+			if (m->biArray != NULL)
+				free(m->biArray);
 		}
 		
 		// Lazy error checking here since "glDeleteBuffers silently ignores 0's and names that do not correspond to existing buffer objects."
@@ -1425,6 +1529,8 @@ void DisposeModel(Model *m)
 		glDeleteBuffers(1, &m->ib);
 		glDeleteBuffers(1, &m->nb);
 		glDeleteBuffers(1, &m->tb);
+		glDeleteBuffers(1, &m->tanb); // andreas sahlin
+		glDeleteBuffers(1, &m->bib);  // andreas Sahlin
 		glDeleteVertexArrays(1, &m->vao);
 		
 		if (m->material != NULL)
