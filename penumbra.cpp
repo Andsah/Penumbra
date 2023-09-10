@@ -15,6 +15,7 @@
 #include "headers/gameObject.h"
 #include "headers/light.h"
 #include "headers/terrain.h"
+#include "headers/skybox.h"
 
 #include "MicroGlut.h"
 #include "GL_utilities.h"
@@ -40,11 +41,14 @@ mat4 world2viewMatrix;
 // Intermediary to set the look-at function in the player camera to be used by openGL
 void bindCamera(int x, int y) {playerCamera->calcLookAt(x, y);}
 
-// TODO: make classes/structs for light source, game objects, portals etc.
+// TODO: make classes/structs for light source (check), game objects (check), portals etc.
 
 Terrain * terrain;
 
 std::vector<Light *> lights;
+
+Skybox * skybox;
+
 
 
 /*      ___          _   _   
@@ -66,7 +70,7 @@ void init(void) {
 	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
 
 	// Set the projection to be perspective projection with a frustum
-	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0);
+	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0); // probably make these defines so i can make planes for frustum culling
 	
 	glUseProgram(skyboxShaders);
 	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
@@ -77,13 +81,19 @@ void init(void) {
 	glUseProgram(objectsShaders);
 	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
 
+	// Initiate skybox - make into a class/objecttype?
+
+	Texture * skyboxTex = new Texture("assets/tga_files/SkyBoxFull.tga", NULL, NULL);
+
+	skybox = new Skybox("assets/obj_files/skyboxfull.obj", skyboxTex, skyboxShaders);
+
     // Initiate terrain - will probably make a separate file for this
 
-	Texture * grass = new Texture("assets/tga_files/brick02.tga", "assets/tga_files/brick02_normal.tga", "assets/tga_files/grass_normal.tga");
+	Texture * terrainTex = new Texture("assets/tga_files/brick02.tga", "assets/tga_files/brick02_normal.tga", "assets/tga_files/grass_normal.tga");
 
 	std::array<Texture *, NUM_TEX> texList {nullptr};
 
-	texList[0] = grass;
+	texList[0] = terrainTex;
 
 	terrain = new Terrain("assets/tga_files/fft-terrain.tga", texList, terrainShaders); // 1204c so big it lags - frustum culling pls lol
 	
@@ -92,7 +102,7 @@ void init(void) {
 
     // Initiate lighting objects
 
-	Light * testLight = new Light(vec3(0.5f,0.5f,0.5f), vec3(0.3f,0.1f,0.1f), vec3(10, 5, 10), true);
+	Light * testLight = new Light(vec3(0.5f,0.5f,0.5f), vec3(0.5f,0.3f,0.3f), vec3(10, 5, 10), true);
 	lights.push_back(testLight);
 
 
@@ -137,6 +147,8 @@ void display(void) {
 	
 	// Draw skybox (remember to turn off depth buffer)
 
+	skybox->setTransform(T(playerCamera->cameraPos.x, playerCamera->cameraPos.y, playerCamera->cameraPos.z));
+	skybox->Draw();
 
 	// Draw terrain
 

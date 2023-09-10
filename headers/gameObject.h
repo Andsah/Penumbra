@@ -52,6 +52,9 @@ public:
     // Set a new transformation to be the transformation of the gameObject
     void setTransform(mat4 newTransform);
 
+    // Set a new normal matrix for the objects normals to be transformed by
+    void setNormalMatrix(mat3 newNormalMat);
+
     // Return the transformationMatrix of the gameObject
     mat4 getTransform();
 

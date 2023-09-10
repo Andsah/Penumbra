@@ -9,9 +9,7 @@ GameObject::GameObject(const char * objFile, std::array<Texture *, NUM_TEX> text
     transformMatrix(transformMatrix),
     shader(shader),
     textures(textures)
-    { model = LoadModel(objFile);
-    normalMatrix = mat3(transpose(inverse(transformMatrix)));
-    }
+    { model = LoadModel(objFile);}
 
 GameObject::GameObject(std::array<Texture *, NUM_TEX> textures, GLuint shader):
 transformMatrix(S(1)),
@@ -28,6 +26,10 @@ Model* GameObject::getModel() {
 
 void GameObject::setTransform(mat4 newTransform) {
     transformMatrix = newTransform;
+}
+
+void GameObject::setNormalMatrix(mat3 newNormalMat) {
+    normalMatrix = newNormalMat;
 }
 
 mat4 GameObject::getTransform() {

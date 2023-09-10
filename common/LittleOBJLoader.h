@@ -622,7 +622,7 @@ static char ParseOBJ(const char *filename, MeshPtr theMesh)
 }
 
 // Load raw, unprocessed OBJ data!
-static struct Mesh * LoadOBJ(const char *filename)
+static struct Mesh * LoadOBJ(const char *filename) // Andreas Sahlin, might need to extend this to contain tangents and bitangents too
 {
 	// Reads once to find sizes, again to fill buffers
 	Mesh *theMesh;

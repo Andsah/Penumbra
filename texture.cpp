@@ -7,17 +7,15 @@
 #include "headers/texture.h"
 
 Texture::Texture(const char * diffuseFile, const char * normalFile, const char * specularFile) {
-    glActiveTexture(GL_TEXTURE0);
     LoadTGATextureSimple(diffuseFile, &diffuse);
-    glBindTexture(GL_TEXTURE_2D, diffuse);
 
-    glActiveTexture(GL_TEXTURE1);
+    if (normalFile != NULL) {
     LoadTGATextureSimple(normalFile, &normalMap);
-    glBindTexture(GL_TEXTURE_2D, normalMap);
+    }
 
-    glActiveTexture(GL_TEXTURE2);
+    if (specularFile != NULL) {
     LoadTGATextureSimple(specularFile, &specularMap);
-    glBindTexture(GL_TEXTURE_2D, specularMap);
+    }
 
     //printf("%i, %i, %i \n", diffuse, normalMap, specularMap);
 }
@@ -25,9 +23,19 @@ Texture::Texture(const char * diffuseFile, const char * normalFile, const char *
 void Texture::loadTextureToShader(GLuint shader) {
     glUseProgram(shader);
 
-    glUniform1i(glGetUniformLocation(shader, "textureMap"), 0); // should switch to the GLuint for the tex - 1 maybe
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuse);
+    glUniform1i(glGetUniformLocation(shader, "textureMap"), 0);
 
-    glUniform1i(glGetUniformLocation(shader, "normalMap"), 1);
+    if (normalMap != NULL) {
+        glActiveTexture(GL_TEXTURE1);
+        glUniform1i(glGetUniformLocation(shader, "normalMap"), 1);
+        glBindTexture(GL_TEXTURE_2D, normalMap);
+    }
 
-    glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
+    if (specularMap != NULL) {
+        glActiveTexture(GL_TEXTURE2);
+        glUniform1i(glGetUniformLocation(shader, "specularMap"), 2);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
+    }
 }

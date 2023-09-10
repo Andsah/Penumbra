@@ -37,7 +37,7 @@ void main(void)
 	// diffuse
 	vec3 lightPos = vec3(viewMatrix * vec4(lightPos[i], 1.0));
 	vec3 s = normalize(lightPos - vec3(surfacePos));
-	vec3 n = normalize(surfaceNormal + mat3(transpose(inverse(viewMatrix * modelMatrix))) * TBNMatrix * texture(normalMap, texCoord).rgb);
+	vec3 n = normalize(surfaceNormal + 10 * mat3(transpose(inverse(viewMatrix * modelMatrix))) * TBNMatrix * texture(normalMap, texCoord).rgb);
 	float diff = clamp(dot(n, s), 0, 1);
 	diffuse += diff * lightDiff[i];
 
@@ -45,11 +45,11 @@ void main(void)
 	vec3 s_vertical = dot(-s, n) * n;
 	vec3 s_horizontal = -s - s_vertical;
 	vec3 r = -s_horizontal + s_vertical;
-	float spec = pow(clamp(dot(r, normalize(vec3(surfacePos))),0, 1), 100);
+	float spec = pow(clamp(dot(r, normalize(vec3(surfacePos) /*+ mat3(transpose(inverse(viewMatrix * modelMatrix))) * TBNMatrix * texture(specularMap, texCoord).rgb*/)),0, 1), 100);
 	specular += spec * lightSpec[i];
 
 	}
-	else {
+	else { // TODO: add back in directional lights, probably just a static sun tho
 		// diffuse
 
 		// specular

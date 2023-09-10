@@ -12,7 +12,6 @@ GameObject(textures, shader) {
     TextureData ttex;
     LoadTGATextureData(heightMap, &ttex);
     model = generateTerrain(&ttex);
-    //printf("%f, %f, %f\n", model->vertexArray[899].x, model->vertexArray[899].y, model->vertexArray[899].z);
 }
 
 Model * Terrain::generateTerrain(TextureData * hMap) {
@@ -131,9 +130,9 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
         }
     }
 
-    // Create the tangents and bitangents for each normal vector
+    // Create the tangents and bitangents for each normal vector - maybe extract this to a function so it works for everything
 
-    // texture coordinates - these are like always the ones right? might need to use tArray
+    // texture coordinates - these are like always the ones right? might need to use tArray - these do seem to work though!
     vec2 uv1(0.0, 1.0);
     vec2 uv2(0.0, 0.0);
     vec2 uv3(1.0, 0.0);
@@ -151,6 +150,7 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
         vec2 deltaUV1 = uv2 - uv1;
         vec2 deltaUV2 = uv3 - uv1;
 
+        // Tangent and bitangent calculations
         float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
         tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
