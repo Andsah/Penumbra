@@ -7,6 +7,8 @@
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
 
+#include <string>
+
 // Contains diffuse, normal and specular maps and assists in loading them to the shader
 struct Texture {
 
@@ -21,7 +23,7 @@ struct Texture {
 
     // Metalness map, RoughnessMap, HeightMap, AOMap - sound a bit too ambitious and low yield.
 
-    Texture(const char * diffuseFile, const char * normalFile, const char * specularFile);
+    Texture(std::string diffuseFile, std::string normalFile, std::string specularFile);
 
     // Takes a shader and loads the diffuse, normal and specular maps into the shader
     void loadTextureToShader(GLuint shader);

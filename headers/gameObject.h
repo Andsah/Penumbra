@@ -36,9 +36,14 @@ protected:
 
     //More stuff? separate bump/normal map, specularity map?
 
+    // Center of bounding sphere
+    float c;
+    // Radius of bounding sphere
+    float r;
+
 public:
     // Take in the name of the .obj file, array of Texture objects, a shader program, and optionally a mat4 transformation matrix
-    GameObject(const char * objFile, std::array<Texture *, NUM_TEX> textures, GLuint shader, mat4 transformMatrix = T(0,0,0));
+    GameObject(std::string objFile, std::array<Texture *, NUM_TEX> textures, GLuint shader, mat4 transformMatrix = T(0,0,0));
 
     // Overload for terrain class's sake
     GameObject(std::array<Texture *, NUM_TEX> textures, GLuint shader);

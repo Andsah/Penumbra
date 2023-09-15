@@ -6,17 +6,21 @@
 
 #include "headers/terrain.h"
 #include "headers/array2d.h"
+#include <string>
 
-Terrain::Terrain(const char * heightMap, std::array<Texture *,NUM_TEX> textures, GLuint shader): 
+Terrain::Terrain(std::string heightMap, std::array<Texture *,NUM_TEX> textures, GLuint shader): 
 GameObject(textures, shader) {
     TextureData ttex;
-    LoadTGATextureData(heightMap, &ttex);
+    LoadTGATextureData(heightMap.c_str(), &ttex);
     model = generateTerrain(&ttex);
 }
 
 Model * Terrain::generateTerrain(TextureData * hMap) {
     unsigned int width = hMap->width;
     unsigned int height = hMap->height;
+
+    mapWidth = width;
+    mapHeight = height;
 
     // The number of vertices in the map is the height * width as one pixel represents one vertex
     int vertexCount = width * height;
@@ -188,6 +192,14 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
 			triangleCount*3);
 
 	return terrainModel;
+}
 
+int Terrain::getMapWidth()
+{
+    return mapWidth;
+}
 
+int Terrain::getMapHeight()
+{
+    return mapHeight;
 }

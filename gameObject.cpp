@@ -5,11 +5,13 @@
 #include "LoadTGA.h"
 #include "headers/gameObject.h"
 
-GameObject::GameObject(const char * objFile, std::array<Texture *, NUM_TEX> textures, GLuint shader, mat4 transformMatrix): 
+#include <string>
+
+GameObject::GameObject(std::string objFile, std::array<Texture *, NUM_TEX> textures, GLuint shader, mat4 transformMatrix): 
     transformMatrix(transformMatrix),
     shader(shader),
     textures(textures)
-    { model = LoadModel(objFile);}
+    { model = LoadModel(objFile.c_str());}
 
 GameObject::GameObject(std::array<Texture *, NUM_TEX> textures, GLuint shader):
 transformMatrix(S(1)),

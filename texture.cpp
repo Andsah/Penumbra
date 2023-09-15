@@ -5,17 +5,20 @@
 #include "LoadTGA.h"
 
 #include "headers/texture.h"
+#include <string>
 
-Texture::Texture(const char * diffuseFile, const char * normalFile, const char * specularFile) {
-    LoadTGATextureSimple(diffuseFile, &diffuse);
+Texture::Texture(std::string diffuseFile, std::string normalFile, std::string specularFile) {
+    LoadTGATextureSimple(diffuseFile.c_str(), &diffuse);
 
-    if (normalFile != NULL) {
-    LoadTGATextureSimple(normalFile, &normalMap);
+    if (!normalFile.empty()) {
+    LoadTGATextureSimple(normalFile.c_str(), &normalMap);
     }
+    else {normalMap = NULL;}
 
-    if (specularFile != NULL) {
-    LoadTGATextureSimple(specularFile, &specularMap);
+    if (specularFile.empty()) {
+    LoadTGATextureSimple(specularFile.c_str(), &specularMap);
     }
+    else {specularMap = NULL;}
 
     //printf("%i, %i, %i \n", diffuse, normalMap, specularMap);
 }

@@ -27,19 +27,22 @@
 #include <vector>
 #include <string>
 
+std::string CASTLETGA = "assets/interiorcastle/tga/";
+std::string CASTLEOBJ = "assets/interiorcastle/obj/";
+std::string TGA = "assets/tga/";
+std::string OBJ = "assets/obj/";
+
 // Object for handling player controls and camera movement
 Camera* playerCamera = new Camera();
 // Shaders
 GLuint skyboxShaders, terrainShaders, objectsShaders;
-
-// Matrix for projecting the view onto the screen(?)
-mat4 projectionMatrix;
-// Matrix for translating the worldspace into view-coordinates
-mat4 world2viewMatrix;
 // I plan on creating a game objects class (with polymorphism/inheritance?) that contains it's own total transformation matrix
 
 // Intermediary to set the look-at function in the player camera to be used by openGL
 void bindCamera(int x, int y) {playerCamera->calcLookAt(x, y);}
+
+// Another intermediary for the mouse clicking function, used for picking
+void bindMouseFunc(int button, int state, int x, int y) {playerCamera->mouseFunc(button, state, x, y);}
 
 // TODO: make classes/structs for light source (check), game objects (check), portals etc.
 
@@ -48,6 +51,8 @@ Terrain * terrain;
 std::vector<Light *> lights;
 
 Skybox * skybox;
+
+std::vector<GameObject *> objects;
 
 
 
@@ -70,40 +75,67 @@ void init(void) {
 	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
 
 	// Set the projection to be perspective projection with a frustum
-	projectionMatrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0); // probably make these defines so i can make planes for frustum culling
+	playerCamera->setProjMat(frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0)); // probably make these defines so i can make planes for frustum culling
 	
 	glUseProgram(skyboxShaders);
-	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "projMatrix"), 1, GL_TRUE, playerCamera->projectionMatrix.m);
 
 	glUseProgram(terrainShaders);
-	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "projMatrix"), 1, GL_TRUE, playerCamera->projectionMatrix.m);
 
 	glUseProgram(objectsShaders);
-	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "projMatrix"), 1, GL_TRUE, projectionMatrix.m);
+	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "projMatrix"), 1, GL_TRUE, playerCamera->projectionMatrix.m);
 
 	// Initiate skybox - make into a class/objecttype?
 
-	Texture * skyboxTex = new Texture("assets/tga_files/SkyBoxFull.tga", NULL, NULL);
+	Texture * skyboxTex = new Texture(TGA + "SkyBoxFull.tga", "", "");
 
-	skybox = new Skybox("assets/obj_files/skyboxfull.obj", skyboxTex, skyboxShaders);
+	skybox = new Skybox("assets/obj/skyboxfull.obj", skyboxTex, skyboxShaders);
 
     // Initiate terrain - will probably make a separate file for this
 
-	Texture * terrainTex = new Texture("assets/tga_files/brick02.tga", "assets/tga_files/brick02_normal.tga", "assets/tga_files/grass_normal.tga");
+	Texture * terrainTex = new Texture(TGA + "brick02.tga", TGA + "brick02_normal.tga", TGA + "brick02_normal.tga");
 
-	std::array<Texture *, NUM_TEX> texList {nullptr};
+	std::array<Texture *, NUM_TEX> texList {terrainTex};
 
-	texList[0] = terrainTex;
-
-	terrain = new Terrain("assets/tga_files/fft-terrain.tga", texList, terrainShaders); // 1204c so big it lags - frustum culling pls lol
+	terrain = new Terrain("assets/tga/fft-terrain.tga", texList, terrainShaders); // 1204c so big it lags - frustum culling pls lol
 	
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
 
-    // Initiate lighting objects
+	// just a test - ceiling has backside, rendering z-buffer from above to fbo to get heightmap for player walking not gonna work - maybe if split all ceils off to a draw after writing to fbo?
+	//also this should be instancable
+	std::array<Texture *, NUM_TEX> ttex = {new Texture(CASTLETGA + "Floor02.tga", "", "")};
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,4, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 4, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 4, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,4, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 4, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 4, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj", ttex, terrainShaders, T(6, 2.9, 8.6)));
 
-	Light * testLight = new Light(vec3(0.5f,0.5f,0.5f), vec3(0.5f,0.3f,0.3f), vec3(10, 5, 10), true);
-	lights.push_back(testLight);
+    // Initiate lighting objects - should make files with placement data for lights and objects aka level info
+	Light * tL1 = new Light(vec3(1.0f,0.0f,0.0f), vec3(0.1f,0.3f,0.3f), vec3(100, 10, 200), true);
+	Light * tL2 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(3, 6, 6), true);
+	Light * tL3 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(100, 10, 100), true);
+	Light * tL4 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(3, 6, 300), true);
+	Light * tL5 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(200, 14, 6), true);
+	Light * tL6 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(3, 50, 6), true);
+	Light * tL7 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(40, 40, 36), true);
+	Light * tL8 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(300, 16, 64), true);
+	Light * tL9 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(40, -13, 60), true);
+	Light * tLa = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(200, 6, 200), true);
+
+	lights.push_back(tL1);
+	lights.push_back(tL2);
+	lights.push_back(tL3);
+	lights.push_back(tL4);
+	lights.push_back(tL5);
+	lights.push_back(tL6);
+	lights.push_back(tL7);
+	lights.push_back(tL8);
+	lights.push_back(tL9);
+	lights.push_back(tLa);
 
 
     // Perhaps more things to initiate
@@ -119,25 +151,24 @@ void init(void) {
  */
 // Draws the image every tick
 void display(void) {
-	playerCamera->checkKeyboardInput();
+	playerCamera->checkKeyboardInput(terrain);
+
 	// clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//printf("(%f, %f, %f)\n", playerCamera->cameraPos.x, playerCamera->cameraPos.y, playerCamera->cameraPos.z);
-
 	// Build the world-to-view matrix every tick
-	world2viewMatrix = lookAtv(playerCamera->cameraPos, playerCamera->lookAtPos, playerCamera->upVec); // precalc inverse view*model mat instead of doing expensively in shader and save to models.
+	playerCamera->updateWorld2view();// precalc inverse view*model mat instead of doing expensively in shader and save to models.
+	
 	glUseProgram(skyboxShaders);
-	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
+	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
 
 	glUseProgram(terrainShaders);
-	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
+	glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
 
 	glUseProgram(objectsShaders);
-	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "viewMatrix"), 1, GL_TRUE, world2viewMatrix.m);
+	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
 
 	//Upload lights to objects and terrain shaders
-
 	for(int i = 0; i < lights.size(); i++) {
 		glUseProgram(terrainShaders);
 		lights[i]->uploadLight(terrainShaders, i);
@@ -146,15 +177,14 @@ void display(void) {
 	}
 	
 	// Draw skybox (remember to turn off depth buffer)
-
 	skybox->setTransform(T(playerCamera->cameraPos.x, playerCamera->cameraPos.y, playerCamera->cameraPos.z));
 	skybox->Draw();
 
 	// Draw terrain
-
 	terrain->Draw();
 
-	// Draw objects
+	// Draw objects - need to cull away some objects (cell based)
+	for (size_t i = 0; i < objects.size(); i++){objects.at(i)->Draw();}
 
 	glutSwapBuffers();
 }
@@ -179,6 +209,7 @@ int main(int argc, char **argv) {
 
 	glutRepeatingTimer(20);
     glutPassiveMotionFunc(&bindCamera);
+	glutMouseFunc(&bindMouseFunc);
 
 	glutMainLoop();
 	exit(0);

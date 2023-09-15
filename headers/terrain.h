@@ -16,11 +16,18 @@ class Terrain: public GameObject{
     // Separate splatmap?
 
     // Initializes the terrain object
+
+    int mapWidth;
+    int mapHeight;
 public:
-    Terrain(const char * heightMap, std::array<Texture *,NUM_TEX> textureFiles, GLuint shader);
+    Terrain(std::string heightMap, std::array<Texture *,NUM_TEX> textureFiles, GLuint shader);
 
     // A helper function for generating vertices, normals, texCoords and indices from a heightmap
     Model * generateTerrain(TextureData * hMap);
+
+    int getMapWidth();
+
+    int getMapHeight();
 
 };
 

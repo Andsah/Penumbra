@@ -5,11 +5,11 @@
 #include "LoadTGA.h"
 #include "headers/skybox.h"
 
-Skybox::Skybox(const char * objFile, Texture * texture , GLuint shader, mat4 transformMatrix): 
+Skybox::Skybox(std::string objFile, Texture * texture , GLuint shader, mat4 transformMatrix): 
     transformMatrix(transformMatrix),
     shader(shader),
     texture(texture)
-    { model = LoadModel(objFile);}
+    { model = LoadModel(objFile.c_str());}
 
 Skybox::~Skybox() {
     DisposeModel(model);

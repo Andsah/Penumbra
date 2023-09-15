@@ -30,7 +30,7 @@ protected:
 
 public:
     // Take in the name of the .obj file, array of Texture objects, a shader program, and optionally a mat4 transformation matrix
-    Skybox(const char * objFile, Texture * texture, GLuint shader, mat4 transformMatrix = T(0,0,0));
+    Skybox(std::string objFile, Texture * texture, GLuint shader, mat4 transformMatrix = T(0,0,0));
 
     // Destructor
     ~Skybox();
