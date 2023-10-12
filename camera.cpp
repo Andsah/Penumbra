@@ -97,23 +97,30 @@ void Camera::checkKeyboardInput(Terrain * terrain) {
 }
 
 void Camera::mouseFunc(int button, int state, int x, int y) {
+
+    if (button == GLUT_LEFT_BUTTON) {
+        leftButton.isPressed = (state == GLUT_DOWN);
+        leftButton.x = x;
+        leftButton.y = y;
+    }
+    // potentially old stuff below
     // Getting these x,y in screen coordinates
     // Step 1: make into Norm Device coords
-    float dev_x = (2.0f * x) / WIN_W - 1.0f;
-    float dev_y = 1.0f - (2.0f * y) / WIN_H; // because 0 in screen coord is top of screen
-    float dev_z = -1.0f; //forwards
+    // float dev_x = (2.0f * x) / WIN_W - 1.0f;
+    // float dev_y = 1.0f - (2.0f * y) / WIN_H; // because 0 in screen coord is top of screen
+    // float dev_z = -1.0f; //forwards
 
-    // Step 2: Homogeneous Clip Coordinates (w coord added)
-    vec4 rayClip = vec4(dev_x, dev_y, dev_z, 1.0f);
+    // // Step 2: Homogeneous Clip Coordinates (w coord added)
+    // vec4 rayClip = vec4(dev_x, dev_y, dev_z, 1.0f);
 
-    // Step 3: View Coordinates
-    vec4 rayEye = inverse(projectionMatrix) * rayClip;
-    rayEye = vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+    // // Step 3: View Coordinates
+    // vec4 rayEye = inverse(projectionMatrix) * rayClip;
+    // rayEye = vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
 
-    // Step 4: World Coordinates
-    vec3 rayWorld =  normalize(vec3(inverse(world2viewMatrix) * rayEye));
+    // // Step 4: World Coordinates
+    // vec3 rayWorld =  normalize(vec3(inverse(world2viewMatrix) * rayEye));
 
-    printVec3(rayWorld);
+    // printVec3(rayWorld);
 
     // If I want to test against bounding spheres of objects, I need to:
     // 1: cull the list based on cell player is in. Movable objects need to change cell ref?

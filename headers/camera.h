@@ -35,6 +35,15 @@ struct Camera {
     // Check to make sure the game only switches pause-state once per keypress
     bool pPressed {false};
 
+    struct leftMouseB {
+        public:
+        bool isPressed;
+        int x;
+        int y;
+    };
+
+    leftMouseB leftButton;
+
     // toggle camera mode
     bool cPressed {false};
     bool flyingCamera{true};
