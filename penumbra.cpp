@@ -16,7 +16,6 @@
 #include "headers/light.h"
 #include "headers/terrain.h"
 #include "headers/skybox.h"
-#include "headers/pickingTex.h"
 
 #include "MicroGlut.h"
 #include "GL_utilities.h"
@@ -50,9 +49,6 @@ Model* squareModel; // test render fbo to tex to look at it
 // Object for handling player controls and camera movement
 Camera* playerCamera = new Camera();
 
-// Picking phase fbo
-PickingTex* pickingFBO = new PickingTex();
-
 // Shaders
 GLuint skyboxShaders, terrainShaders, objectsShaders, pickingShaders, plainShaders;
 
@@ -72,46 +68,43 @@ Skybox * skybox;
 
 std::vector<GameObject *> objects;
 
+// Picking stuff
+
+struct PixelInfo
+    {
+        float objectID = 0.0; 
+        float junk1 = 0.0; 
+        float junk2 = 0.0;
+
+        void Print()
+        {
+            printf("Object %f\n", objectID);
+        }
+    };
+
+int pickedObject = -1; // all objects have ID of >= 0
+
 // render to fbo for picking purposes
 void pickingRender() {
-	/* 
-		Basically Emreis method is to enable writing to the fbo (picking tex) then enable the picking shaders and 
-		(his render func with the callbacks draws one primitive/triangle at a time so each primID can be recorded) 
-		record each world object's objID (per object) and transform to draw to the fbo, then in rendering phase, 
-		detect the hit triangle via reading from the fbo texture and getting the primitiveID from the PixelInfo and call 
-		a special render call to only draw the triangle with the simple color shader enabled, then draw everything else normal.
-		
-		I don't need the precision of each triangle (not going to implement different damage for head of enemy etc.) so 
-		I will not make a custom draw call that draws each primitive separately in a loop. And instead just pick out whole objects
-		*/
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		pickingFBO->enableWriting();
+	glUseProgram(pickingShaders);
+	glUniformMatrix4fv(glGetUniformLocation(pickingShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
+	glUniform1f(glGetUniformLocation(pickingShaders, "numObjects"), objects.size());
 
-		glUseProgram(pickingShaders);
-		glUniformMatrix4fv(glGetUniformLocation(pickingShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
+	for (uint i = 0; i < objects.size(); i++){
 
-		for (uint i = 0; i < objects.size(); i++){
+		objects.at(i)->setShader(pickingShaders);
+		//printf("index i : %i\n", i);
+		glUniform1f(glGetUniformLocation(pickingShaders, "objectIndex"), i + 1);
+		objects.at(i)->Draw();
+		objects.at(i)->setShader(terrainShaders);
+		}
 
-			objects.at(i)->setShader(pickingShaders);
-			//printf("index i : %i\n", i);
-			glUniform1ui(glGetUniformLocation(pickingShaders, "gObjectIndex"), i + 1);
-			objects.at(i)->Draw();
-			objects.at(i)->setShader(terrainShaders);
-			}
+	PixelInfo pixel;
+	glReadPixels(playerCamera->leftButton.x, WIN_H - playerCamera->leftButton.y - 1, 1, 1,  GL_RGB, GL_FLOAT, &pixel);
 
- 
-		PickingTex::PixelInfo pixel = pickingFBO->readPixel(playerCamera->leftButton.x, WIN_H - playerCamera->leftButton.y - 1);
-
-		pickingFBO->disableWriting();
-
-		useFBO(0L, pickingFBO->fbo, 0L);
-		glUseProgram(plainShaders);
-
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-
-		DrawModel(squareModel, plainShaders, "in_Position", NULL, "in_TexCoord");
+	pickedObject = int(round(pixel.objectID*objects.size()) - 1);
 
 
 }
@@ -130,18 +123,6 @@ void finalRender() {
 	glUseProgram(objectsShaders);
 	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
 
-	int objectID = -1;
-	if (playerCamera->leftButton.isPressed) {
-		PickingTex::PixelInfo pixel = pickingFBO->readPixel(playerCamera->leftButton.x, WIN_H - playerCamera->leftButton.y - 1);
-		if (pixel.objectID != 0) {
-			objectID = pixel.objectID - 1;
-			GameObject * pickedObject = objects.at(pixel.objectID - 1);
-			pickedObject->setShader(pickingShaders);
-			pickedObject->Draw();
-			pickedObject->setShader(terrainShaders);
-		}
-	}
-
 	//Upload lights to objects and terrain shaders
 	for(size_t i = 0; i < lights.size(); i++) {
 		glUseProgram(terrainShaders);
@@ -159,8 +140,10 @@ void finalRender() {
 
 	// Draw objects - need to cull away some objects (cell based)
 	for (size_t i = 0; i < objects.size(); i++){
-		if(i != objectID) {objects.at(i)->Draw();}
+		if(i != pickedObject) {objects.at(i)->Draw();}
 		}
+
+	pickedObject = -1; // reset picking
 }
 
 /*      ___          _   _   
@@ -171,7 +154,7 @@ void finalRender() {
 // Initiates a lot of values, loads models and shaders etc.
 void init(void) {
     // GL inits
-	glClearColor(0.2,0.2,0.7,0);
+	glClearColor(0.0,0.2,0.75,0);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	//printError("GL inits");
@@ -180,7 +163,7 @@ void init(void) {
 			(vec3 *)square, NULL, (vec2 *)squareTexCoord, NULL,
 			squareIndices, NULL, NULL, 4, 6); // extra nulls for my tan bitan extension
 
-	pickingFBO->init(WIN_W, WIN_H);
+	//pickingFBO->init(WIN_W, WIN_H);
 
 
 	// Load and compile shaders to use (One for skybox, one for terrain, one for game objects, one for picking)
