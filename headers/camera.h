@@ -6,13 +6,15 @@
 // window height
 #define WIN_H 800
 
-#include "MicroGlut.h"
-#include "GL_utilities.h"
-#include "VectorUtils4.h"
-#include "LittleOBJLoader.h"
-#include "LoadTGA.h"
+#include "../common/Linux/MicroGlut.h"
+#include "../common/GL_utilities.h"
+#include "../common/VectorUtils4.h"
+#include "../common/LittleOBJLoader.h"
+#include "../common/LoadTGA.h"
+
 #include "terrain.h"
 
+// maybe rename this? portals might need camera objects too that are more basic
 // Struct for handling variables and functions for controlling the players movement and camera
 struct Camera {
     
@@ -37,7 +39,8 @@ struct Camera {
 
     struct leftMouseB {
         public:
-        bool isPressed;
+        bool isPressed = false;
+        bool pressCheck = false; 
         int x;
         int y;
     };

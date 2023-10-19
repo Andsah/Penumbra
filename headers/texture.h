@@ -1,11 +1,11 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "MicroGlut.h"
-#include "GL_utilities.h"
-#include "VectorUtils4.h"
-#include "LittleOBJLoader.h"
-#include "LoadTGA.h"
+#include "../common/Linux/MicroGlut.h"
+#include "../common/GL_utilities.h"
+#include "../common/VectorUtils4.h"
+#include "../common/LittleOBJLoader.h"
+#include "../common/LoadTGA.h"
 
 #include <string>
 

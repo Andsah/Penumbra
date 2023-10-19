@@ -16,12 +16,13 @@
 #include "headers/light.h"
 #include "headers/terrain.h"
 #include "headers/skybox.h"
+#include "headers/clickable.h"
 
-#include "MicroGlut.h"
-#include "GL_utilities.h"
-#include "VectorUtils4.h"
-#include "LittleOBJLoader.h"
-#include "LoadTGA.h"
+#include "common/Linux/MicroGlut.h"
+#include "common/GL_utilities.h"
+#include "common/VectorUtils4.h"
+#include "common/LittleOBJLoader.h"
+#include "common/LoadTGA.h"
 
 #include <array>
 #include <vector>
@@ -31,20 +32,6 @@ std::string CASTLETGA = "assets/interiorcastle/tga/";
 std::string CASTLEOBJ = "assets/interiorcastle/obj/";
 std::string TGA = "assets/tga/";
 std::string OBJ = "assets/obj/";
-
-GLfloat square[] = {
-							-1,-1,0,
-							-1,1, 0,
-							1,1, 0,
-							1,-1, 0};
-GLfloat squareTexCoord[] = {
-							 0, 0,
-							 0, 1,
-							 1, 1,
-							 1, 0};
-GLuint squareIndices[] = {0, 1, 2, 0, 2, 3}; 
-
-Model* squareModel; // test render fbo to tex to look at it
 
 // Object for handling player controls and camera movement
 Camera* playerCamera = new Camera();
@@ -66,15 +53,17 @@ std::vector<Light*> lights;
 
 Skybox * skybox;
 
-std::vector<GameObject *> objects;
+/* separating out clickable objects into a separate list will be needed and practical since most objects 
+   will not be clickable like walls and floor tiles and the floating point precision isn't endless*/
+std::vector<GameObject *> objects; 
+std::vector<Clickable *> clickableObjects;
 
 // Picking stuff
-
 struct PixelInfo
     {
         float objectID = 0.0; 
         float junk1 = 0.0; 
-        float junk2 = 0.0;
+        float junk2 = 0.0; // these two might be useful for something in the future
 
         void Print()
         {
@@ -82,31 +71,33 @@ struct PixelInfo
         }
     };
 
-int pickedObject = -1; // all objects have ID of >= 0
-
-// render to fbo for picking purposes
+// render to screenbuffer for picking purposes (because fbo:s and glReadPixels don't mix)
 void pickingRender() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	// upload viewmatrix and the number of (clickable) objects to the picking shaders
 	glUseProgram(pickingShaders);
 	glUniformMatrix4fv(glGetUniformLocation(pickingShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
-	glUniform1f(glGetUniformLocation(pickingShaders, "numObjects"), objects.size());
+	glUniform1f(glGetUniformLocation(pickingShaders, "numObjects"), clickableObjects.size()); // the secret sauce that made it work
 
-	for (uint i = 0; i < objects.size(); i++){
-
-		objects.at(i)->setShader(pickingShaders);
-		//printf("index i : %i\n", i);
+	// loop through all (clickable) objects, upload their index in the list to the picking shaders and draw it
+	for (uint i = 0; i < clickableObjects.size(); i++){
+		clickableObjects.at(i)->setShader(pickingShaders);
 		glUniform1f(glGetUniformLocation(pickingShaders, "objectIndex"), i + 1);
-		objects.at(i)->Draw();
-		objects.at(i)->setShader(terrainShaders);
+		clickableObjects.at(i)->Draw();
+		clickableObjects.at(i)->setShader(terrainShaders);
 		}
 
+	// read the red color channel (objectID) of the pixel where the player clicked, and set it as the pickedObject (it's float because that's what I got to work)
 	PixelInfo pixel;
 	glReadPixels(playerCamera->leftButton.x, WIN_H - playerCamera->leftButton.y - 1, 1, 1,  GL_RGB, GL_FLOAT, &pixel);
+	int pickedObject = int(round(pixel.objectID*clickableObjects.size()) - 1);
+	if (pickedObject != -1) {
+		clickableObjects.at(pickedObject)->onClick();
+	}
 
-	pickedObject = int(round(pixel.objectID*objects.size()) - 1);
-
-
+	// we have used up the click, reset
+	playerCamera->leftButton.isPressed = false;
 }
 
 // the render call to render to the screen
@@ -140,10 +131,13 @@ void finalRender() {
 
 	// Draw objects - need to cull away some objects (cell based)
 	for (size_t i = 0; i < objects.size(); i++){
-		if(i != pickedObject) {objects.at(i)->Draw();}
-		}
+		objects.at(i)->Draw();
+	}
 
-	pickedObject = -1; // reset picking
+	// Draw clickable objects - need to cull away some objects (cell based)
+	for (size_t i = 0; i < clickableObjects.size(); i++){
+		clickableObjects.at(i)->Draw();
+	}
 }
 
 /*      ___          _   _   
@@ -158,13 +152,6 @@ void init(void) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	//printError("GL inits");
-
-	squareModel = LoadDataToModel(
-			(vec3 *)square, NULL, (vec2 *)squareTexCoord, NULL,
-			squareIndices, NULL, NULL, 4, 6); // extra nulls for my tan bitan extension
-
-	//pickingFBO->init(WIN_W, WIN_H);
-
 
 	// Load and compile shaders to use (One for skybox, one for terrain, one for game objects, one for picking)
 	skyboxShaders  = loadShaders("shaders/skybox.vert",  "shaders/skybox.frag" );
@@ -209,6 +196,7 @@ void init(void) {
 	// just a test - ceiling has backside, rendering z-buffer from above to fbo to get heightmap for player walking not gonna work - maybe if split all ceils off to a draw after writing to fbo?
 	//also this should be instancable
 	std::array<Texture *, NUM_TEX> ttex = {new Texture(CASTLETGA + "Floor02.tga", "", "")};
+	std::array<Texture *, NUM_TEX> doortex = {new Texture(CASTLETGA + "WoodDoor.tga", "", "")};
 	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,4, 1)));
 	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 4, 1)));
 	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 4, 1)));
@@ -216,6 +204,31 @@ void init(void) {
 	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 4, 5)));
 	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 4, 5)));
 	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 2.9, 8.6)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,5, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 5, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 5, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,5, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 5, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 5, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 3.9, 8.6)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,6, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 6, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 6, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,6, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 6, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 6, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 4.9, 8.6)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,7, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 7, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 7, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,7, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 7, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 7, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 5.9, 8.6)));
+
+	Clickable * click = new Clickable(CASTLEOBJ + "Door01.obj", doortex, terrainShaders, T(12,3,10));
+	click->setOnCLick([click](){click->setTransform(click->getTransform()*Ry(M_PI/2.0));});
+	clickableObjects.push_back(click);
 
     // Initiate lighting objects - should make files with placement data for lights and objects aka level info
 	Light * tL1 = new Light(vec3(1.0f,0.0f,0.0f), vec3(0.1f,0.3f,0.3f), vec3(100, 10, 200), true);

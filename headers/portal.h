@@ -1,11 +1,11 @@
 #ifndef PORTAL_H
 #define PORTAL_H
 
-#include "MicroGlut.h"
-#include "GL_utilities.h"
-#include "VectorUtils4.h"
-#include "LittleOBJLoader.h"
-#include "LoadTGA.h"
+#include "../common/Linux/MicroGlut.h"
+#include "../common/GL_utilities.h"
+#include "../common/VectorUtils4.h"
+#include "../common/LittleOBJLoader.h"
+#include "../common/LoadTGA.h"
 
 #include "gameObject.h"
 
@@ -26,10 +26,10 @@ public:
     Portal(const char * objFile, std::array<Texture *,NUM_TEX> textureFiles, GLuint shader);
 
     // returns a reference to the other portal
-    Portal * getPortal();
+    Portal * getOtherEnd();
 
     // set the portal that will be linked to this portal
-    void setPortal(Portal * otherPortal);
+    void setOtherEnd(Portal * otherEnd);
 
 };
 

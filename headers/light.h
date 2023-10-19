@@ -3,11 +3,11 @@
 
 #define MAX_LIGHTS 10
 
-#include "MicroGlut.h"
-#include "GL_utilities.h"
-#include "VectorUtils4.h"
-#include "LittleOBJLoader.h"
-#include "LoadTGA.h"
+#include "../common/Linux/MicroGlut.h"
+#include "../common/GL_utilities.h"
+#include "../common/VectorUtils4.h"
+#include "../common/LittleOBJLoader.h"
+#include "../common/LoadTGA.h"
 
 // Respresents a lightsource in the game. Can be positional or directional
 struct Light {
