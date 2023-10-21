@@ -14,7 +14,7 @@ GameObject::GameObject(std::string objFile, std::array<Texture *, NUM_TEX> textu
     { model = LoadModel(objFile.c_str());}
 
 GameObject::GameObject(std::array<Texture *, NUM_TEX> textures, GLuint shader):
-transformMatrix(S(1)),
+transformMatrix(T(0,0,0)),
 textures(textures), 
 shader(shader) {}
 

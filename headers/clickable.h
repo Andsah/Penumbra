@@ -10,11 +10,9 @@
 #include "gameObject.h"
 #include <functional>
 
-//typedef void (*callbackFunc)(void);
-
 #define callbackFunc std::function<void()>
 
-// A class for representing a portal in the game
+// A class for representing a clickable object in the game
 class Clickable: public GameObject{ 
 
     protected:

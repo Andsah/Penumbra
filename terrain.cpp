@@ -22,6 +22,8 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
     mapWidth = width;
     mapHeight = height;
 
+    //printf("mapwidth and height: %u and %u \n", width, height);
+
     // The number of vertices in the map is the height * width as one pixel represents one vertex
     int vertexCount = width * height;
 
@@ -49,14 +51,26 @@ Model * Terrain::generateTerrain(TextureData * hMap) {
     //indexArray
     Array2D<GLuint> iArray = Array2D<GLuint>(width - 1, (height - 1) * 6); // product = triangleCount * 3
 
+    float min = 100, max = 0;
+
     for (x = 0; x < width; x++) {
         for (z = 0; z < height; z++) {
             // Initialise the vertex array, using the height map for y values
             vArray.Set(x, z, vec3(x, hMap->imageData[(x + z * width) * (hMap->bpp/8)] / 20.0, z)); // dividing by float seems to be important for interpolating
             // Initialise the texture array, standard coordinates
             tArray.Set(x, z, vec2(x, z));
+
+            if (vArray.Get(x + z * width).y < min) {
+				min = vArray.Get(x + z * width).y;
+			}
+			else if (vArray.Get(x + z * width).y > max) {
+				max = vArray.Get(x + z * width).y;
+			}
         }
     }
+
+    //printf("tmin: %f, tmax: %f\n", min, max);
+
     // Tangents and the total normalised sum of normals, and p
 	vec3 up, down, left, right, upRight, downleft, nTot, p;
 

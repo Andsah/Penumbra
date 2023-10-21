@@ -2,9 +2,9 @@
 #define CAMERA_H
 
 // window width
-#define WIN_W 800
+#define WIN_W 1024
 // window height
-#define WIN_H 800
+#define WIN_H 1024
 
 #include "../common/Linux/MicroGlut.h"
 #include "../common/GL_utilities.h"
@@ -12,7 +12,7 @@
 #include "../common/LittleOBJLoader.h"
 #include "../common/LoadTGA.h"
 
-#include "terrain.h"
+#include "heightmap.h"
 
 // maybe rename this? portals might need camera objects too that are more basic
 // Struct for handling variables and functions for controlling the players movement and camera
@@ -32,6 +32,10 @@ struct Camera {
     float moveDist {0.1f};
     // The sensitivity of the mouse-controlled camera rotation
     float cameraSensitivity {0.0005f};
+
+    //player collision (sphere)
+    float radius = 1.0f;
+
     // Is the game paused?
     bool pause {true};
     // Check to make sure the game only switches pause-state once per keypress
@@ -62,10 +66,8 @@ struct Camera {
     // Calculates the next look-at point based on the coordinates (x, y) of the of the mouse pointer
     void calcLookAt(int x, int y);
     // Function for handling inputs from the keyboard
-    void checkKeyboardInput(Terrain * terrain);
+    void checkKeyboardInput(Heightmap * hMap);
     // Function for handling mouse clicking, used for picking
     void mouseFunc(int button, int state, int x, int y);
-    // Calculating the appropriate player height on the terrain map - how to expand this to placed floors etc? kanske designa egen terrainmap med platta områden som golv
-    float calcHeight(Model * terrain, int terrainWidth, float x, float z);
 };
 #endif

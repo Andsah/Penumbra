@@ -5,6 +5,8 @@ in vec4 surfacePos;
 in vec3 surfaceNormal;
 in mat3 TBNMatrix;
 
+in float height;
+
 uniform sampler2D textureMap;
 uniform sampler2D normalMap;
 uniform sampler2D specularMap;
@@ -59,4 +61,6 @@ void main(void)
 	}
 	// combine
 	outColor = vec4((ambient + diffuse + specular) * texture(textureMap, texCoord).rgb, 1.0);
+
+	//outColor = vec4(height, height, height, 1.0);
 }

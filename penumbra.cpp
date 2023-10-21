@@ -17,6 +17,8 @@
 #include "headers/terrain.h"
 #include "headers/skybox.h"
 #include "headers/clickable.h"
+#include "headers/billboard.h"
+#include "headers/portal.h"
 
 #include "common/Linux/MicroGlut.h"
 #include "common/GL_utilities.h"
@@ -37,7 +39,7 @@ std::string OBJ = "assets/obj/";
 Camera* playerCamera = new Camera();
 
 // Shaders
-GLuint skyboxShaders, terrainShaders, objectsShaders, pickingShaders, plainShaders;
+GLuint skyboxShaders, terrainShaders, objectsShaders, pickingShaders, plainShaders, heightShaders, billboardShaders;
 
 // Intermediary to set the look-at function in the player camera to be used by openGL
 void bindCamera(int x, int y) {playerCamera->calcLookAt(x, y);}
@@ -49,6 +51,8 @@ void bindMouseFunc(int button, int state, int x, int y) {playerCamera->mouseFunc
 
 Terrain * terrain;
 
+Heightmap * heightmap;
+
 std::vector<Light*> lights;
 
 Skybox * skybox;
@@ -57,6 +61,8 @@ Skybox * skybox;
    will not be clickable like walls and floor tiles and the floating point precision isn't endless*/
 std::vector<GameObject *> objects; 
 std::vector<Clickable *> clickableObjects;
+std::vector<Billboard *> billboards;
+std::vector<Portal * > portals;
 
 // Picking stuff
 struct PixelInfo
@@ -70,6 +76,43 @@ struct PixelInfo
             printf("Object %f\n", objectID);
         }
     };
+
+
+// check
+bool once = false;
+// render to screenbuffer and save as TGA to use as heightMap
+void heightRender() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glViewport(0, 0, 1024, 1024);
+
+	glUseProgram(heightShaders);
+	// place the camera in the center of the terrain looking down
+	glUniformMatrix4fv(glGetUniformLocation(pickingShaders, "viewMatrix"), 1, GL_TRUE, lookAtv(vec3(128, 128, 128), vec3(128, 0, 128), vec3(-1, 0, 0)).m);
+
+	terrain->setShader(heightShaders);
+	terrain->Draw();
+	terrain->setShader(terrainShaders);
+
+	// loop through all objects
+	for (uint i = 0; i < objects.size(); i++){
+		objects.at(i)->setShader(heightShaders);
+		objects.at(i)->Draw();
+		objects.at(i)->setShader(terrainShaders);
+	}
+
+	// loop through all (clickable) objects
+	for (uint i = 0; i < clickableObjects.size(); i++){
+		clickableObjects.at(i)->setShader(heightShaders);
+		clickableObjects.at(i)->Draw();
+		clickableObjects.at(i)->setShader(terrainShaders);
+	}
+
+	SaveFramebufferToTGA("assets/tga/heightmap.tga", 0,0, 1024, 1024);
+	glViewport(0, 0, 800, 800); 
+
+	heightmap = new Heightmap("assets/tga/heightmap.tga");
+}
 
 // render to screenbuffer for picking purposes (because fbo:s and glReadPixels don't mix)
 void pickingRender() {
@@ -86,7 +129,7 @@ void pickingRender() {
 		glUniform1f(glGetUniformLocation(pickingShaders, "objectIndex"), i + 1);
 		clickableObjects.at(i)->Draw();
 		clickableObjects.at(i)->setShader(terrainShaders);
-		}
+	}
 
 	// read the red color channel (objectID) of the pixel where the player clicked, and set it as the pickedObject (it's float because that's what I got to work)
 	PixelInfo pixel;
@@ -114,6 +157,13 @@ void finalRender() {
 	glUseProgram(objectsShaders);
 	glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
 
+	glUseProgram(heightShaders);
+	glUniformMatrix4fv(glGetUniformLocation(heightShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
+
+	glUseProgram(billboardShaders);
+	glUniformMatrix4fv(glGetUniformLocation(billboardShaders, "viewMatrix"), 1, GL_TRUE, playerCamera->world2viewMatrix.m);
+	glUniform3fv(glGetUniformLocation(billboardShaders, "cameraPos"), 1, &(playerCamera->cameraPos.x));
+
 	//Upload lights to objects and terrain shaders
 	for(size_t i = 0; i < lights.size(); i++) {
 		glUseProgram(terrainShaders);
@@ -138,6 +188,10 @@ void finalRender() {
 	for (size_t i = 0; i < clickableObjects.size(); i++){
 		clickableObjects.at(i)->Draw();
 	}
+
+	for (size_t i = 0; i < billboards.size(); i++){
+		billboards.at(i)->Draw();
+	}
 }
 
 /*      ___          _   _   
@@ -159,9 +213,12 @@ void init(void) {
 	objectsShaders = loadShaders("shaders/objects.vert", "shaders/objects.frag");
 	pickingShaders = loadShaders("shaders/picking.vert", "shaders/picking.frag");
 	plainShaders = loadShaders("shaders/plain.vert", "shaders/plain.frag");
+	heightShaders = loadShaders("shaders/heightmap.vert", "shaders/heightmap.frag");
+	billboardShaders = loadShadersG("shaders/billboard.vert", "shaders/billboard.frag", "shaders/billboard.geom");
 
 	// Set the projection to be perspective projection with a frustum
 	playerCamera->setProjMat(frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0)); // probably make these defines so i can make planes for frustum culling
+	
 	
 	glUseProgram(skyboxShaders);
 	glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "projMatrix"), 1, GL_TRUE, playerCamera->projectionMatrix.m);
@@ -174,6 +231,9 @@ void init(void) {
 
 	glUseProgram(pickingShaders);
 	glUniformMatrix4fv(glGetUniformLocation(pickingShaders, "projMatrix"), 1, GL_TRUE, playerCamera->projectionMatrix.m);
+
+	glUseProgram(billboardShaders);
+	glUniformMatrix4fv(glGetUniformLocation(billboardShaders, "projMatrix"), 1, GL_TRUE, playerCamera->projectionMatrix.m);
 
 	// Initiate skybox - make into a class/objecttype?
 
@@ -189,46 +249,63 @@ void init(void) {
 
 	terrain = new Terrain("assets/tga/fft-terrain.tga", texList, terrainShaders); // 1204c so big it lags - frustum culling pls lol
 
-	
+	heightmap = new Heightmap("assets/tga/heightmap.tga");
+
+
+	// creating navigationMap
+	int dim = terrain->getMapWidth() / 2;
+	mat4 orthoMatrix = ortho(-dim + 1, dim, -dim + 1, dim, 0.2f, 250.0); // 128 because it's half of map dimension
+	glUseProgram(heightShaders);
+	glUniformMatrix4fv(glGetUniformLocation(heightShaders, "projMatrix"), 1, GL_TRUE, orthoMatrix.m);
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
 
 	// just a test - ceiling has backside, rendering z-buffer from above to fbo to get heightmap for player walking not gonna work - maybe if split all ceils off to a draw after writing to fbo?
 	//also this should be instancable
-	std::array<Texture *, NUM_TEX> ttex = {new Texture(CASTLETGA + "Floor02.tga", "", "")};
-	std::array<Texture *, NUM_TEX> doortex = {new Texture(CASTLETGA + "WoodDoor.tga", "", "")};
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,4, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 4, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 4, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,4, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 4, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 4, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 2.9, 8.6)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,5, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 5, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 5, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,5, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 5, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 5, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 3.9, 8.6)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,6, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 6, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 6, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,6, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 6, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 6, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 4.9, 8.6)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,7, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 7, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 7, 1)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(10,7, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(6, 7, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, terrainShaders, T(2, 7, 5)));
-	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, terrainShaders, T(6, 5.9, 8.6)));
 
-	Clickable * click = new Clickable(CASTLEOBJ + "Door01.obj", doortex, terrainShaders, T(12,3,10));
-	click->setOnCLick([click](){click->setTransform(click->getTransform()*Ry(M_PI/2.0));});
-	clickableObjects.push_back(click);
+	GLuint tShaders = terrainShaders;
+	std::array<Texture *, NUM_TEX> ttex = {new Texture(CASTLETGA + "Floor02.tga", "", "")};
+	std::array<Texture *, 1> doortex = {new Texture(CASTLETGA + "WoodDoor.tga", "", "")};
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,4, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 4, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 4, 1)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,4, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 4, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 4, 5)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 2.9, 8.6)));
+	Texture * bushtex = new Texture(TGA + "bush.tga", "", "");
+	Billboard * bushes = new Billboard(bushtex, billboardShaders);
+	bushes->setHeightmap(heightmap);
+	bushes->generateVerts(100000);
+	billboards.push_back(bushes);
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,5, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 5, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 5, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,5, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 5, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 5, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 3.9, 8.6)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,6, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 6, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 6, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,6, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 6, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 6, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 4.9, 8.6)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,7, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 7, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 7, 1)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,7, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 7, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 7, 5)));
+	// objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 5.9, 8.6)));
+
+	// Clickable * click = new Clickable(CASTLEOBJ + "Door01.obj", doortex, tShaders, T(12,3,10));
+	// click->setOnCLick([click](){click->setTransform(click->getTransform()*Ry(M_PI/2.0));});
+	// clickableObjects.push_back(click);
+
+	// render world from above and save to tga for height map with objects in it
+
 
     // Initiate lighting objects - should make files with placement data for lights and objects aka level info
 	Light * tL1 = new Light(vec3(1.0f,0.0f,0.0f), vec3(0.1f,0.3f,0.3f), vec3(100, 10, 200), true);
@@ -268,8 +345,13 @@ void init(void) {
 // Draws the image every tick
 void display(void) {
 
+	if(!once) {
+		//heightRender();
+		once = true;
+	}
+
 	// handle player input and update camera
-	playerCamera->checkKeyboardInput(terrain);
+	playerCamera->checkKeyboardInput(heightmap);
 	playerCamera->updateWorld2view();// precalc inverse view*model mat instead of doing expensively in shader and save to models.
 
 	// ---- PICKING PHASE ----
@@ -280,6 +362,10 @@ void display(void) {
 
 	// ---- RENDER PHASE ----
 	finalRender(); 
+
+	//printf("-----\n cam coords: %f:%f:%f\n-------\n", playerCamera->cameraPos.x, playerCamera->cameraPos.y, playerCamera->cameraPos.z);
+
+	//printf("-----\n lookAt pos: %f:%f:%f\n-------\n", playerCamera->lookAtPos.x, playerCamera->lookAtPos.y, playerCamera->lookAtPos.z);
 
 	glutSwapBuffers();
 }
@@ -298,7 +384,7 @@ int main(int argc, char **argv) {
 
 	//printf("%d vs %d", sizeof(GLfloat), sizeof(vec3));
 
-	glutCreateWindow("Penumbra™ Definitive Edition GOTY™ Edition Collector's Edition");
+	glutCreateWindow("Penumbra Definitive Edition GOTY Edition Collector's Edition");
 	glutDisplayFunc(display);
 	init();
 

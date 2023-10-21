@@ -17,6 +17,8 @@ out vec2 texCoord;
 out vec4 surfacePos;
 out mat3 TBNMatrix;
 
+out float height;
+
 void main(void) {
 	surfaceNormal = mat3(transpose(inverse(viewMatrix * modelMatrix))) * inNormal;
 	texCoord = inTexCoord;
@@ -27,6 +29,8 @@ void main(void) {
     vec3 B = normalize(vec3(modelMatrix * vec4(inBitangent, 0.0)));
     vec3 N = normalize(vec3(modelMatrix * vec4(inNormal,    0.0)));
     TBNMatrix = mat3(T, B, N);
+
+	height = (modelMatrix * vec4(inPosition, 1.0)).y /32;
 
 	gl_Position = projMatrix * viewMatrix * modelMatrix * vec4(inPosition, 1.0);
 }

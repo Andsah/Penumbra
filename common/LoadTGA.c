@@ -349,7 +349,9 @@ void SaveFramebufferToTGA(char *filename, GLint x, GLint y, GLint w, GLint h)
 	err = SaveDataToTGA(filename, w, h, 
 			3*8, (unsigned char *)buffer);
 //	free(buffer); already done
-	printf("SaveDataToTGA returned %d\n", err);
+	if (err != TGA_OK) {
+		printf("SaveDataToTGA returned %d\n", err);
+	}
 }
 
 

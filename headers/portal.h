@@ -10,7 +10,7 @@
 #include "gameObject.h"
 
 // A class for representing a portal in the game
-class Portal: public GameObject{ 
+class Portal { 
 
 protected:
 
@@ -18,18 +18,38 @@ protected:
     Portal * linkedPortal;
 
     // This portal's view (virtual camera view)
-    mat4 portalview;
+    mat4 portalCam;
+
+    // The portal's translation, rotation, and scale combined, expressed in world coordinates
+    mat4 transformMatrix;
+
+    std::array<vec4, 4> portalVerts = {
+        vec4(-1, -1, 0, 1),
+        vec4( 1, -1, 0, 1),
+        vec4(-1,  1, 0, 1),
+        vec4( 1,  1, 0, 1),
+        };
+
+    std::array<vec3, 2> portalIndices = {
+        vec3(0, 1, 2),
+        vec3(2, 1, 3)
+    };
     
 public:
 
     // Going to need a constructor
-    Portal(const char * objFile, std::array<Texture *,NUM_TEX> textureFiles, GLuint shader);
+    Portal(GLuint shader);
 
-    // returns a reference to the other portal
+    // calculates the portalView of this portal based on where player is in relation to the portal and where the other portal is
+    mat4 makePortalView(mat4 playerViewMatrix);
+
     Portal * getOtherEnd();
 
-    // set the portal that will be linked to this portal
     void setOtherEnd(Portal * otherEnd);
+
+    void setTransform(mat4 newTransform);
+
+    mat4 getTransform();
 
 };
 

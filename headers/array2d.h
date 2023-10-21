@@ -142,15 +142,15 @@ class Array2D {
         }
     }
 
-    // Prints a formatted version of the array with float values
-    void PrintFloat() {
-        for (int y = 0 ; y < m_rows ; y++) {
-            printf("%d: ", y);
-            for (int x = 0 ; x < m_cols ; x++) {
-                GLuint f = (GLuint)m_p[y * m_cols + x];
-                printf("(%d) ", f);
+    // mine :)
+    void transpose() {
+        for (int i = 0 ; i < m_rows ; i++) {
+            for (int j = 0; j < m_cols - i; j++) {
+
+                float temp = Get(i, j).y;
+                Set(i, j, vec3(i, Get(m_rows - 1 - j, m_cols - 1 - i).y, j));
+                Set(m_rows - 1 - j, m_cols - 1 - i, vec3(m_rows - 1 - j, temp, m_cols - 1 - i));
             }
-            printf("\n");
         }
     }
 

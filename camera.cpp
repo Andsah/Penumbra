@@ -1,10 +1,11 @@
-#include "headers/camera.h"
 #include "MicroGlut.h"
 #include "GL_utilities.h"
 #include "VectorUtils4.h"
 #include "LittleOBJLoader.h"
 #include "LoadTGA.h"
 #include "headers/camera.h"
+
+#include "headers/array2d.h"
 
 // collision detection will probably have to be done in here
 
@@ -31,7 +32,7 @@ void Camera::calcLookAt(int x, int y)
     }
 }
 
-void Camera::checkKeyboardInput(Terrain * terrain) {
+void Camera::checkKeyboardInput(Heightmap * hMap) {
     vec3 forward = normalize(lookAtPos - cameraPos);
     vec3 rightVec = normalize(CrossProduct(forward, upVec)); 
 
@@ -42,17 +43,23 @@ void Camera::checkKeyboardInput(Terrain * terrain) {
 
     //place player on terrain
     if(!doneOncePerCamSwitch){
-    cameraPos.y = 1.0 + calcHeight(terrain->getModel(),terrain->getMapWidth(), cameraPos.x, cameraPos.z);
+    cameraPos.y = 2.0 + hMap->calcHeight(cameraPos.x, cameraPos.z);
     doneOncePerCamSwitch = true;
     }
 
+    vec3 forwardOld = forward, rightOld = rightVec;
     // kinda dirty ngl and only works on terrain - how to make work on placed meshes?
-    forward = normalize(vec3(cameraPos.x + (forward * moveDist).x, calcHeight(terrain->getModel(), terrain->getMapWidth(), cameraPos.x + (forward * moveDist).x, cameraPos.z +(forward * moveDist).z), cameraPos.z + (forward * moveDist).z)
-     - vec3(cameraPos.x, calcHeight(terrain->getModel(), terrain->getMapWidth(), cameraPos.x, cameraPos.z), cameraPos.z));
+    forward = normalize(vec3(cameraPos.x + (forward * moveDist).x, hMap->calcHeight(cameraPos.x + (forward * moveDist).x, cameraPos.z +(forward * moveDist).z), cameraPos.z + (forward * moveDist).z)
+     - vec3(cameraPos.x, hMap->calcHeight(cameraPos.x, cameraPos.z), cameraPos.z));
     
-    rightVec = normalize(vec3(cameraPos.x + (rightVec * moveDist).x, calcHeight(terrain->getModel(), terrain->getMapWidth(), cameraPos.x + (rightVec * moveDist).x, cameraPos.z +(rightVec * moveDist).z), cameraPos.z + (rightVec * moveDist).z)
-     - vec3(cameraPos.x, calcHeight(terrain->getModel(), terrain->getMapWidth(), cameraPos.x, cameraPos.z), cameraPos.z));
+    rightVec = normalize(vec3(cameraPos.x + (rightVec * moveDist).x, hMap->calcHeight( cameraPos.x + (rightVec * moveDist).x, cameraPos.z +(rightVec * moveDist).z), cameraPos.z + (rightVec * moveDist).z)
+     - vec3(cameraPos.x, hMap->calcHeight(cameraPos.x, cameraPos.z), cameraPos.z));
+
+     if (abs(dot(forward, vec3(0,1,0))) > 0.8) {
+        return;
+        }
     }
+
     if (glutKeyIsDown('w')) { 
         cameraPos = cameraPos + forward * moveDist; 
         lookAtPos = lookAtPos + forward* moveDist;
@@ -69,6 +76,20 @@ void Camera::checkKeyboardInput(Terrain * terrain) {
         cameraPos = cameraPos + rightVec * moveDist;
         lookAtPos = lookAtPos + rightVec * moveDist;
     }
+
+    // other controls
+
+    if (glutKeyIsDown('o') && false) {
+        cameraPos = vec3(128, 128, 128);
+        lookAtPos = vec3(128, 0, 128);
+        upVec = vec3(-1, 0, 0);
+        glutReshapeWindow(256, 256);
+
+    }
+    else {
+        glutReshapeWindow(WIN_W, WIN_H);
+    }
+
     if (glutKeyIsDown('e')) {
         exit(0);
     }
@@ -109,24 +130,4 @@ void Camera::mouseFunc(int button, int state, int x, int y) {
     else {
         leftButton.pressCheck = false;
     }
-}
-
-float Camera::calcHeight(Model *terrain, int terrainWidth, float x, float z)
-{
-	int x0 = x;
-	int z0 = z;
-	float xRemainder = x - x0;
-	float zRemainder = z - z0;
-	vec3 xVec;
-	vec3 zVec;
-	if ( zRemainder < xRemainder) {
-		xVec = terrain->vertexArray[x0 + 1 + z0 * terrainWidth] - terrain->vertexArray[x0 + z0 * terrainWidth];
-		zVec = terrain->vertexArray[x0 + 1 + (z0 + 1) * terrainWidth] - terrain->vertexArray[x0 + 1 + z0 * terrainWidth];
-	}
-	else {
-		xVec = terrain->vertexArray[x0 + 1 + (z0 + 1) * terrainWidth] - terrain->vertexArray[x0 + (z0 + 1)* terrainWidth];
-		zVec = terrain->vertexArray[x0 + (z0 + 1) * terrainWidth] - terrain->vertexArray[x0 + z0 * terrainWidth];
-	}
-	 return zRemainder * zVec.y + xRemainder * xVec.y + terrain->vertexArray[x0 + z0 * terrainWidth].y;
-
 }
