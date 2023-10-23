@@ -1,4 +1,3 @@
-// create billboard class that is simpler than game object, just one texture and an array of vertices then fix together a simple draw call that doesn't use model
 #ifndef BILLBOARD_H
 #define BILLBOARD_H
 
@@ -40,6 +39,6 @@ public:
     void setHeightmap(Heightmap * newMap);
 
     // Simple draw for the points only
-    void Draw();
+    void Draw(const mat4 & viewMat, const mat4 & projMat);
 };
 #endif

@@ -67,6 +67,6 @@ public:
     void setShader(GLuint newShader);
 
     // Draw the gameObject using the selected shader and transformation (mult with proj and world2view in shader)
-    void Draw();
+    void Draw(const mat4 & viewMat, const mat4 & projMat);
 };
 #endif

@@ -3,6 +3,7 @@
 #include "common/VectorUtils4.h"
 #include "common/LittleOBJLoader.h"
 #include "common/LoadTGA.h"
+
 #include "headers/gameObject.h"
 
 #include <string>
@@ -42,13 +43,16 @@ void GameObject::setShader(GLuint newShader) {
     shader = newShader;
 }
 
-void GameObject::Draw() {
+void GameObject::Draw(const mat4 & viewMat, const mat4 & projMat) {
     for (uint i = 0; i < NUM_TEX; i++) {
         if (textures[i] != nullptr) {
             textures[i]->loadTextureToShader(shader);
         }
     }
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelMatrix"), 1, GL_TRUE, transformMatrix.m);
+    glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"), 1, GL_TRUE, viewMat.m);
+	glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"), 1, GL_TRUE, projMat.m);
+
     glUniformMatrix3fv(glGetUniformLocation(shader, "normalMatrix"), 1, GL_TRUE, normalMatrix.m); // might not be needed anymore because of in-shader matrix
 	DrawModel(model, shader, "inPosition", "inNormal", "inTexCoord", "inTangent", "inBitangent");
 }

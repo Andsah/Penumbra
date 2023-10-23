@@ -31,13 +31,14 @@ void Skybox::setShader(GLuint newShader) {
     shader = newShader;
 }
 
-void Skybox::Draw() {
-    
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+void Skybox::Draw(const mat4 & viewMat, const mat4 & projMat) {
+
     texture->loadTextureToShader(shader);
-    
+
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelMatrix"), 1, GL_TRUE, transformMatrix.m);
+    glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"), 1, GL_TRUE, viewMat.m);
+	glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"), 1, GL_TRUE, projMat.m);
+
     
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);

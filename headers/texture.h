@@ -25,7 +25,8 @@ struct Texture {
 
     Texture(std::string diffuseFile, std::string normalFile, std::string specularFile);
 
-    // Takes a shader and loads the diffuse, normal and specular maps into the shader
+    // Takes a shader and loads the diffuse, normal and specular maps into the shader 
+    // [CALLS glUseProgram FOR YOU]
     void loadTextureToShader(GLuint shader);
 };
 

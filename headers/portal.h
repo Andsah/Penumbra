@@ -7,50 +7,48 @@
 #include "../common/LittleOBJLoader.h"
 #include "../common/LoadTGA.h"
 
-#include "gameObject.h"
+#include <array>
+#include "camera.h"
 
 // A class for representing a portal in the game
 class Portal { 
 
 protected:
 
-    // A reference to the other portal object
-    Portal * linkedPortal;
 
-    // This portal's view (virtual camera view)
-    mat4 portalCam;
+    GLuint shader;
 
-    // The portal's translation, rotation, and scale combined, expressed in world coordinates
+    Portal * otherEnd;
+
+    // The portal's translation (position), rotation, and scale combined (aka model matrix)
     mat4 transformMatrix;
 
-    std::array<vec4, 4> portalVerts = {
-        vec4(-1, -1, 0, 1),
-        vec4( 1, -1, 0, 1),
-        vec4(-1,  1, 0, 1),
-        vec4( 1,  1, 0, 1),
-        };
+    vec3 position;
 
-    std::array<vec3, 2> portalIndices = {
-        vec3(0, 1, 2),
-        vec3(2, 1, 3)
-    };
+    mat4 rotation;
+
+    Model* portalModel;
+
     
 public:
 
     // Going to need a constructor
-    Portal(GLuint shader);
+    Portal(GLuint shader, vec3 position = vec3(0, 0, 0), mat4 rotation = Ry(0));
 
     // calculates the portalView of this portal based on where player is in relation to the portal and where the other portal is
-    mat4 makePortalView(mat4 playerViewMatrix);
-
-    Portal * getOtherEnd();
+    mat4 makePortalView(mat4 playerViewMatrix, mat4 otherEndMat);
 
     void setOtherEnd(Portal * otherEnd);
 
-    void setTransform(mat4 newTransform);
+    Portal * getOtherEnd();
+
+    void setTransform(mat4 transform);
 
     mat4 getTransform();
 
-};
+    void draw(const mat4 & viewMat, const mat4 & projMat);
 
+    const mat4 clipProjMat(const mat4 & viewMat, const mat4 & projMat);
+
+};
 #endif

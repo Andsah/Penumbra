@@ -15,8 +15,8 @@ texture(texture){}
 void Billboard::generateVerts(uint num) {
 
     for(uint i = 0; i < num; i++) {
-        float x = (float)(rand()) / (float)(RAND_MAX) * 256;
-        float z = (float)(rand()) / (float)(RAND_MAX) * 256;
+        float x = (float)(rand()) / (float)(RAND_MAX) * 254 + 1;
+        float z = (float)(rand()) / (float)(RAND_MAX) * 254 + 1;
 
         float y = hMap->calcHeight(x, z); // times 4 because you know what - no i do that in the calcHeight func already you stupid bih
 
@@ -48,9 +48,10 @@ void Billboard::setShader(GLuint newShader) {
 void Billboard::setHeightmap(Heightmap * newMap) {
     hMap = newMap;
 }
-void Billboard::Draw() {
-
+void Billboard::Draw(const mat4 & viewMat, const mat4 & projMat) {
     texture->loadTextureToShader(shader);
+    glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"), 1, GL_TRUE, viewMat.m);
+	glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"), 1, GL_TRUE, projMat.m);
 
     glBindVertexArray(vertexArrayObjID);
 

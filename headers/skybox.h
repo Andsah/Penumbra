@@ -48,6 +48,6 @@ public:
     void setShader(GLuint newShader);
 
     // Draw the skybox using the selected shader and transformation (mult with proj and world2view in shader) depth test and backface culling turned off
-    void Draw();
+    void Draw(const mat4 & viewMat, const mat4 & projMat);
 };
 #endif

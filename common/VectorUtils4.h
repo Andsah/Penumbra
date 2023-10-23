@@ -368,6 +368,12 @@
 	mat4 S(GLfloat s);
 	mat4 S(vec3 s);
 	mat4 lookAt(vec3 p, vec3 l, vec3 u);
+	// ANDREAS SAHLIN
+	mat4 MatrixSub(mat4 a, mat4 b);
+	mat4 getTranslationPart(const mat4 & a);
+	mat4 getScalePart(const mat4 & a);
+	mat4 getRotationPart(const mat4 & a);
+	float sign(float val);
 #endif
 
 //#ifdef __cplusplus
@@ -580,6 +586,62 @@ vec3 operator*(const mat3 &a, const vec3 &b)
         #define NAN (*(const float *) __nan)
     #endif
 #endif
+
+// Andreas Sahlin again
+float sign(float val) {
+	if(val > 0.0) return 1.0;
+	else if (val == 0.0) return 0.0;
+	else return -1.0;
+}
+
+// --- mat4 operations --- hello Andreas Sahlin here
+
+inline
+mat4 operator+(const mat4 &a, const mat4 &b)
+{
+	return MatrixAdd(a, b);
+}
+
+inline
+mat4 operator-(const mat4 &a, const mat4 &b)
+{
+	return MatrixSub(a, b);
+}
+
+mat4 getTranslationPart(const mat4 & a) {
+	mat4 mat = T(a.m[3], a.m[7], a.m[11]);
+	return mat;
+}
+
+mat4 getScalePart(const mat4 & a) {
+	vec3 v1 = vec3(a.m[0], a.m[4], a.m[8]);
+	vec3 v2 = vec3(a.m[1], a.m[5], a.m[9]);
+	vec3 v3 = vec3(a.m[2], a.m[6], a.m[10]);
+	float sx = Norm(v1);
+	float sy = Norm(v2);
+	float sz = Norm(v3);
+	mat4 mat = IdentityMatrix();
+	mat.m[0] = sx;
+	mat.m[4] = sx;
+	mat.m[8] = sx;
+
+	mat.m[1] = sy;
+	mat.m[5] = sy;
+	mat.m[9] = sy;
+
+	mat.m[2] = sz;
+	mat.m[6] = sz;
+	mat.m[10] = sz;
+
+	return mat;
+}
+
+mat4 getRotationPart(const mat4 & a) {
+	const mat4 t = inverse(getTranslationPart(a));
+	const mat4 s = inverse(getScalePart(a));
+	mat4 mat = Mult(t, Mult(a, s));
+	return mat;
+}
 
 char transposed = 0;
 
@@ -1197,6 +1259,17 @@ mat4 MatrixAdd(mat4 a, mat4 b)
 	int i;
 	for (i = 0; i < 16; i++)
 		dest.m[i] = a.m[i] + b.m[i];
+	
+	return dest;
+}
+
+mat4 MatrixSub(mat4 a, mat4 b) // ANDREAS SAHLIN
+{
+	mat4 dest;
+	
+	int i;
+	for (i = 0; i < 16; i++)
+		dest.m[i] = a.m[i] - b.m[i];
 	
 	return dest;
 }

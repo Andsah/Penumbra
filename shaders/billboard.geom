@@ -10,7 +10,7 @@ uniform vec3 cameraPos;
 out vec2 texCoord;
 
 void main()                                                                         
-{       
+{   
     mat4 gVP = projMatrix * viewMatrix;                                                                            
     vec3 pos = gl_in[0].gl_Position.xyz;                                            
     vec3 CameraToPoint = pos - cameraPos; 
