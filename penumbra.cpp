@@ -217,7 +217,9 @@ void init(void) {
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
 
-	addPortalPair(vec3(4,5,23), vec3(20, 8, 10), Ry(0), Ry(M_PI_2f));
+	addPortalPair(vec3(4,5,23), vec3(20, 8, 10), Ry(M_PI_4f), Ry(M_PI_2f));
+	addPortalPair(vec3(23,9,3), vec3(2, 8, 100), Ry(4), Ry(3));
+	addPortalPair(vec3(128,3,128), vec3(200, 10, 90), Ry(5), Ry(2));
 
 	// just a test - ceiling has backside, rendering z-buffer from above to fbo to get heightmap for player walking not gonna work - maybe if split all ceils off to a draw after writing to fbo?
 	//also this should be instancable
@@ -289,6 +291,8 @@ void init(void) {
 
 
     // Perhaps more things to initiate
+
+	glutRepeatingTimer(25);
 
 }
 
@@ -515,7 +519,13 @@ void display(void) {
 
 	// ---- RENDER PHASE ----
 
-	drawRecursivePortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix, 3, 0);
+	GLfloat t = (GLfloat)glutGet(GLUT_ELAPSED_TIME)/ 1000;
+
+	mat4 rot = Rz(cos(t)) * Ry(sin(t * sqrt(2)));
+
+	portals[0][0]->setRotation(rot);
+
+	drawRecursivePortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix, 1, 0);
 
 	//drawNonPortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix);
 	

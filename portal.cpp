@@ -10,11 +10,11 @@ Portal::Portal(GLuint shader, vec3 position, mat4 rotation):
 shader(shader), position(position), rotation(rotation) {
 
     setTransform(T(position.x,position.y, position.z) * rotation);
-    portalModel = LoadModel("assets/interiorcastle/obj/Wall01.obj");
+    portalModel = LoadModel("assets/obj/portal.obj");
 }
 
 mat4 Portal::makePortalView(mat4 playerViewMatrix, mat4 rot, mat4 otherEndMat) {
-        mat4 mat = playerViewMatrix * transformMatrix * Ry(M_PI) * rotation * inverse(otherEndMat);
+        mat4 mat = playerViewMatrix * transformMatrix * ArbRotate(MultVec3(rotation, vec3(0, 1, 0)), M_PI)  * inverse(otherEndMat);
         return mat;
     }
 
@@ -22,7 +22,7 @@ void Portal::setOtherEnd(Portal * otherEnd) {
     otherEnd = otherEnd;
 }
 
-Portal * Portal::getOtherEnd() {
+Portal *Portal::getOtherEnd() {
     return otherEnd;
 }
 
@@ -34,8 +34,22 @@ mat4 Portal::getTransform() {
     return transformMatrix;
 }
 
+void Portal::setRotation(mat4 rot) {
+    rotation = rot;
+    setTransform(T(position.x,position.y, position.z) * rotation);
+}
+
 mat4 Portal::getRotation() {
     return rotation;
+}
+
+void Portal::setPosition(vec3 pos) {
+    position = pos;
+    setTransform(T(position.x,position.y, position.z) * rotation);
+}
+
+vec3 Portal::getPosition() {
+    return position;
 }
 
 void Portal::draw(const mat4 & viewMat, const mat4 & projMat) {

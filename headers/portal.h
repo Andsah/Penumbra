@@ -29,6 +29,7 @@ protected:
 
     Model* portalModel;
 
+    void setTransform(mat4 transform);
     
 public:
 
@@ -42,11 +43,15 @@ public:
 
     Portal * getOtherEnd();
 
-    void setTransform(mat4 transform);
-
     mat4 getTransform();
 
+    void setRotation(mat4 rot);
+
     mat4 getRotation();
+
+    void setPosition(vec3 pos);
+
+    vec3 getPosition();
 
     void draw(const mat4 & viewMat, const mat4 & projMat);
 
