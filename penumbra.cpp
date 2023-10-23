@@ -72,6 +72,9 @@ void addPortalPair(vec3 pos1, vec3 pos2, mat4 r1, mat4 r2) {
 	portals.push_back({port1, port2});
 }
 
+int maxRecursion = 1;
+int testCase = 0;
+
 // Picking stuff
 struct PixelInfo
     {
@@ -101,25 +104,24 @@ void heightRender() {
 	mat4 aboveViewMatrix = lookAtv(vec3(128, 128, 128), vec3(128, 0, 128), vec3(-1, 0, 0));
 
 	terrain->setShader(heightShaders);
-	terrain->Draw(orthoMatrix,aboveViewMatrix);
+	terrain->Draw(aboveViewMatrix, orthoMatrix);
 	terrain->setShader(terrainShaders);
 
 	// loop through all objects
 	for (uint i = 0; i < objects.size(); i++){
 		objects.at(i)->setShader(heightShaders);
-		objects.at(i)->Draw(orthoMatrix,aboveViewMatrix);
+		objects.at(i)->Draw(aboveViewMatrix, orthoMatrix);
 		objects.at(i)->setShader(terrainShaders);
 	}
 
 	// loop through all (clickable) objects
 	for (uint i = 0; i < clickableObjects.size(); i++){
 		clickableObjects.at(i)->setShader(heightShaders);
-		clickableObjects.at(i)->Draw(orthoMatrix,aboveViewMatrix);
+		clickableObjects.at(i)->Draw(aboveViewMatrix, orthoMatrix);
 		clickableObjects.at(i)->setShader(terrainShaders);
 	}
 
 	SaveFramebufferToTGA("assets/tga/heightmap.tga", 0,0, 1024, 1024);
-	glViewport(0, 0, 800, 800); 
 
 	heightmap = new Heightmap("assets/tga/heightmap.tga");
 }
@@ -180,24 +182,6 @@ void init(void) {
 
 	// Set the projection to be perspective projection with a frustum
 	player->getPlayerCam()->setProjMat(frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 250.0)); // probably make these defines so i can make planes for frustum culling
-	
-	// glUseProgram(skyboxShaders);
-	// glUniformMatrix4fv(glGetUniformLocation(skyboxShaders, "projMatrix"), 1, GL_TRUE, player->getPlayerCam()->projectionMatrix.m);
-
-	// glUseProgram(terrainShaders);
-	// glUniformMatrix4fv(glGetUniformLocation(terrainShaders, "projMatrix"), 1, GL_TRUE, player->getPlayerCam()->projectionMatrix.m);
-
-	// glUseProgram(objectsShaders);
-	// glUniformMatrix4fv(glGetUniformLocation(objectsShaders, "projMatrix"), 1, GL_TRUE, player->getPlayerCam()->projectionMatrix.m);
-
-	// glUseProgram(pickingShaders);
-	// glUniformMatrix4fv(glGetUniformLocation(pickingShaders, "projMatrix"), 1, GL_TRUE, player->getPlayerCam()->projectionMatrix.m);
-
-	// glUseProgram(billboardShaders);
-	// glUniformMatrix4fv(glGetUniformLocation(billboardShaders, "projMatrix"), 1, GL_TRUE, player->getPlayerCam()->projectionMatrix.m);
-
-	// glUseProgram(portalShaders);
-	// glUniformMatrix4fv(glGetUniformLocation(portalShaders, "projMatrix"), 1, GL_TRUE, player->getPlayerCam()->projectionMatrix.m);
 
 	// Initiate skybox - make into a class/objecttype?
 
@@ -217,9 +201,26 @@ void init(void) {
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
 
-	addPortalPair(vec3(4,5,23), vec3(20, 8, 10), Ry(M_PI_4f), Ry(M_PI_2f));
-	addPortalPair(vec3(23,9,3), vec3(2, 8, 100), Ry(4), Ry(3));
-	addPortalPair(vec3(128,3,128), vec3(200, 10, 90), Ry(5), Ry(2));
+	Texture * bushtex = new Texture(TGA + "bush.tga", "", "");
+	Billboard * bushes = new Billboard(bushtex, billboardShaders);
+	bushes->setHeightmap(heightmap);
+
+	if(testCase == 0) {
+		bushes->generateVerts(1000000);
+		maxRecursion = 1;
+	}
+	else if (testCase == 1) {
+		bushes->generateVerts(1000);
+		addPortalPair(vec3(4,5,23), vec3(20, 8, 10), Ry(M_PI_4f), Ry(M_PI_2f));
+		addPortalPair(vec3(90, 2, 152), vec3(124, 2, 130), Ry(M_PI), Ry(0));
+		addPortalPair(vec3(110, 2, 121), vec3(126, 2, 132), Ry(0), Ry(-M_PI_2));
+		maxRecursion = 1;
+	}
+	else if (testCase == 2){
+		addPortalPair(vec3(128, 2, 126), vec3(128, 2, 130), Ry(M_PI), Ry(0));
+		maxRecursion = 4;
+	}
+	billboards.push_back(bushes);
 
 	// just a test - ceiling has backside, rendering z-buffer from above to fbo to get heightmap for player walking not gonna work - maybe if split all ceils off to a draw after writing to fbo?
 	//also this should be instancable
@@ -234,30 +235,39 @@ void init(void) {
 	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 4, 5)));
 	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 4, 5)));
 	objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 2.9, 8.6)));
-	Texture * bushtex = new Texture(TGA + "bush.tga", "", "");
-	Billboard * bushes = new Billboard(bushtex, billboardShaders);
-	bushes->setHeightmap(heightmap);
-	bushes->generateVerts(1000);
-	billboards.push_back(bushes);
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 5, 1)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,5, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 5, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 5, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 3.9, 8.6)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,6, 1)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 6, 1)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 6, 1)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,6, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 6, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 6, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 4.9, 8.6)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,7, 1)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 7, 1)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 7, 1)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(10,7, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(6, 7, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(2, 7, 5)));
-	// objects.push_back(new GameObject(CASTLEOBJ + "Stairs01.obj",ttex, tShaders, T(6, 5.9, 8.6)));
+
+	std::array<Texture *, NUM_TEX> ctex = {new Texture(CASTLETGA + "Cauldron01.tga", "", "")};
+	std::array<Texture *, NUM_TEX> btex = {new Texture(CASTLETGA + "BookshelfLarge.tga", "", "")};
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(128,0, 128)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(114,0, 115)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(110, 0, 115)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(106, 0, 115)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(114,0, 119)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(110, 0, 119)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(106, 0, 119)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(114,0, 123)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(110, 0, 123)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(106, 0, 123)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Cauldron01.obj", ctex, tShaders, T(110, 1, 119)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(94, 0, 150)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(90, 0, 150)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(86, 0, 150)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(94, 0, 154)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(90, 0, 154)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(86, 0, 154)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(94, 0, 158)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(90, 0, 158)));
+	objects.push_back(new GameObject(CASTLEOBJ + "Floor02.obj", ttex, tShaders, T(86, 0, 158)));
+
+	objects.push_back(new GameObject(CASTLEOBJ + "BookshelfLarge.obj", btex, tShaders, T(90, 2, 154)));
 
 	Clickable * click = new Clickable(CASTLEOBJ + "Door01.obj", doortex, tShaders, T(12, 3, 10));
 	click->setOnCLick([click](){click->setTransform(click->getTransform()*Ry(M_PI/2.0));});
@@ -269,14 +279,14 @@ void init(void) {
     // Initiate lighting objects - should make files with placement data for lights and objects aka level info
 	Light * tL1 = new Light(vec3(1.0f,0.0f,0.0f), vec3(0.1f,0.3f,0.3f), vec3(100, 10, 200), true);
 	Light * tL2 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(3, 6, 6), true);
-	Light * tL3 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(100, 10, 100), true);
 	Light * tL4 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(3, 6, 300), true);
 	Light * tL5 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(200, 14, 6), true);
 	Light * tL6 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(3, 50, 6), true);
 	Light * tL7 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(40, 40, 36), true);
 	Light * tL8 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(300, 16, 64), true);
 	Light * tL9 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(40, -13, 60), true);
-	Light * tLa = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(200, 6, 200), true);
+	Light * tL3 = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(90, 10, 154), true);
+	Light * tLa = new Light(vec3(0.0f,1.0f,0.5f), vec3(0.0f,0.0f,0.0f), vec3(110, 10, 109), true);
 
 	lights.push_back(tL1);
 	lights.push_back(tL2);
@@ -296,6 +306,14 @@ void init(void) {
 
 }
 
+void drawSkybox(const mat4 & viewMat, const mat4 & projMat) {
+	// Draw skybox (remember to turn off depth buffer)
+	mat4 t = getTranslationPart(inverse(viewMat));
+	vec3 pos = vec3(t.m[3], t.m[7], t.m[11]);
+	skybox->setTransform(T(pos.x, pos.y, pos.z));
+	skybox->Draw(viewMat, projMat);
+}
+
 void drawNonPortals(const mat4 & viewMat, const mat4 & projMat)
 {
 	// Draw all objects that aren't portals
@@ -309,15 +327,10 @@ void drawNonPortals(const mat4 & viewMat, const mat4 & projMat)
 		//lights[i]->uploadLight(objectsShaders, i);
 	}
 
-	// Draw skybox (remember to turn off depth buffer)
+	mat4 t = getTranslationPart(inverse(viewMat));
+	vec3 pos = vec3(t.m[3], t.m[7], t.m[11]);
 
-	// printf("start\n");
-	// printMat4(T(player->getPlayerCam()->cameraPos.x, player->getPlayerCam()->cameraPos.y, player->getPlayerCam()->cameraPos.z));
-	// printMat4(inverse(getTranslationPart(player->getPlayerCam()->viewMatrix)));
-	// printf("end\n");
-
-	// skybox->setTransform(T(player->getPlayerCam()->cameraPos.x, player->getPlayerCam()->cameraPos.y, player->getPlayerCam()->cameraPos.z));
-	// skybox->Draw(viewMat, projMat);
+	if(testCase == 0) {drawSkybox(viewMat, projMat);}
 
 	// Draw terrain
 	terrain->Draw(viewMat, projMat);
@@ -333,7 +346,7 @@ void drawNonPortals(const mat4 & viewMat, const mat4 & projMat)
 	}
 
 	glUseProgram(billboardShaders);
-	glUniform3fv(glGetUniformLocation(billboardShaders, "cameraPos"), 1, &(player->getPlayerCam()->cameraPos.x));
+	glUniform3fv(glGetUniformLocation(billboardShaders, "cameraPos"), 1, &(pos.x));
 
 	for (size_t i = 0; i < billboards.size(); i++){
 		billboards.at(i)->Draw(viewMat, projMat);
@@ -348,29 +361,14 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 			Portal * portal = portals.at(i)[j];
 			Portal * otherEnd = portals.at(i)[1 - j];
 
-			// Disable color and depth drawing
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			glDepthMask(GL_FALSE);
-
-			// Disable depth test
 			glDisable(GL_DEPTH_TEST);
-
-			// Enable stencil test, to prevent drawing outside
-			// region of current portal depth
 			glEnable(GL_STENCIL_TEST);
-
-			// Fail stencil test when inside of outer portal
-			// (fail where we should be drawing the inner portal)
 			glStencilFunc(GL_NOTEQUAL, recursionLevel, 0xFF);
-
-			// Increment stencil value on stencil fail
-			// (on area of inner portal)
 			glStencilOp(GL_INCR, GL_KEEP, GL_KEEP);
-
-			// Enable (writing into) all stencil bits
 			glStencilMask(0xFF);
 
-			// Draw portal into stencil buffer
 			portal->draw(viewMat, projMat);
 
 			mat4 otherEndView = portal->makePortalView(viewMat, otherEnd->getRotation(), otherEnd->getTransform());
@@ -378,56 +376,27 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 			// Base case, render inside of inner portal
 			if (recursionLevel == maxRecursionLevel)
 			{
-				// Enable color and depth drawing
 				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 				glDepthMask(GL_TRUE);
-				
-				// Clear the depth buffer so we don't interfere with stuff
-				// outside of this inner portal
 				glClear(GL_DEPTH_BUFFER_BIT);
-
-				// Enable the depth test
-				// So the stuff we render here is rendered correctly
 				glEnable(GL_DEPTH_TEST);
-
-				// Enable stencil test
-				// So we can limit drawing inside of the inner portal
 				glEnable(GL_STENCIL_TEST);
-
-				// Disable drawing into stencil buffer
 				glStencilMask(0x00);
-
-				// Draw only where stencil value == recursionLevel + 1
-				// which is where we just drew the new portal
 				glStencilFunc(GL_EQUAL, recursionLevel + 1, 0xFF);
-
-				// Draw scene objects with destView, limited to stencil buffer
-				// use an edited projection matrix to set the near plane to the portal plane
+				//drawSkybox(otherEndView, portal->clipProjMat(otherEndView, projMat));
 				drawNonPortals(otherEndView, portal->clipProjMat(otherEndView, projMat));
 			}
 			else
 			{
 				// Recursion case
-				// Pass our new view matrix and the clipped projection matrix (see above)
 				drawRecursivePortals(otherEndView, portal->clipProjMat(otherEndView, projMat), maxRecursionLevel, recursionLevel + 1);
 			}
 
-			// Disable color and depth drawing
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			glDepthMask(GL_FALSE);
-
-			// Enable stencil test and stencil drawing
 			glEnable(GL_STENCIL_TEST);
 			glStencilMask(0xFF);
-
-			// Fail stencil test when inside of our newly rendered
-			// inner portal
 			glStencilFunc(GL_NOTEQUAL, recursionLevel + 1, 0xFF);
-
-			// Decrement stencil value on stencil fail
-			// This resets the incremented values to what they were before,
-			// eventually ending up with a stencil buffer full of zero's again
-			// after the last (outer) step.
 			glStencilOp(GL_DECR, GL_KEEP, GL_KEEP);
 
 			// Draw portal into stencil buffer
@@ -435,24 +404,13 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 		}
 	}
 
-	// Disable the stencil test and stencil writing
 	glDisable(GL_STENCIL_TEST);
 	glStencilMask(0x00);
-
-	// Disable color writing
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-	// Enable the depth test, and depth writing.
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
-
-	// Make sure we always write the data into the buffer
 	glDepthFunc(GL_ALWAYS);
-
-	// Clear the depth buffer
 	glClear(GL_DEPTH_BUFFER_BIT);
-
-	// next step: add in depth buffer stuff and finish up, then change how drawing calls are made for every object, basically everyone takes in view and proj now, but has their own shader ref
 
 	// Draw portals into depth buffer
 	for (uint i = 0; i < portals.size(); i++) {
@@ -460,26 +418,13 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 		portals.at(i)[1]->draw(viewMat, projMat);
 	}
 
-	// Reset the depth function to the default
 	glDepthFunc(GL_LESS);
-
-	// Enable stencil test and disable writing to stencil buffer
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0x00);
-
-	// Draw at stencil >= recursionlevel
-	// which is at the current level or higher (more to the inside)
-	// This basically prevents drawing on the outside of this level.
-	glStencilFunc(GL_LEQUAL, recursionLevel, 0xFF);
-
-	// Enable color and depth drawing again
+	glStencilFunc(GL_EQUAL, recursionLevel, 0xFF);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
-
-	// And enable the depth test
 	glEnable(GL_DEPTH_TEST);
-
-	// Draw scene objects normally, only at recursionLevel
 	drawNonPortals(viewMat, projMat);
 
 }
@@ -498,10 +443,12 @@ void display(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	glStencilMask(0x00);
 
+	glEnable(GL_CULL_FACE);
+
 
 	// bit dirty but this can't be done in init so...
 	if(!once) {
-		//heightRender();
+		heightRender();
 		once = true;
 	}
 
@@ -519,20 +466,15 @@ void display(void) {
 
 	// ---- RENDER PHASE ----
 
+	//rendering skybox here makes it not cover the portals but it doesn't move with the portals either
+
 	GLfloat t = (GLfloat)glutGet(GLUT_ELAPSED_TIME)/ 1000;
 
-	mat4 rot = Rz(cos(t)) * Ry(sin(t * sqrt(2)));
+	mat4 rot = Ry(sin(t * 0.2 * sqrt(2)));
 
-	portals[0][0]->setRotation(rot);
+	if(testCase == 1) {portals[0][0]->setRotation(rot);}
 
-	drawRecursivePortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix, 1, 0);
-
-	//drawNonPortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix);
-	
-
-	//printf("-----\n cam coords: %f:%f:%f\n-------\n", playerCamera->cameraPos.x, playerCamera->cameraPos.y, playerCamera->cameraPos.z);
-
-	//printf("-----\n lookAt pos: %f:%f:%f\n-------\n", playerCamera->lookAtPos.x, playerCamera->lookAtPos.y, playerCamera->lookAtPos.z);
+	drawRecursivePortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix, maxRecursion, 0);
 
 	glutSwapBuffers();
 }
@@ -548,8 +490,6 @@ int main(int argc, char **argv) {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
 	glutInitContextVersion(3, 2);
 	glutInitWindowSize(WIN_W, WIN_H);
-
-	//printf("%d vs %d", sizeof(GLfloat), sizeof(vec3));
 
 	glutCreateWindow("Penumbra Definitive Edition GOTY Edition Collector's Edition");
 	glutDisplayFunc(display);
