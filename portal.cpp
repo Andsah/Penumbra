@@ -13,7 +13,7 @@ shader(shader), position(position), rotation(rotation) {
     portalModel = LoadModel("assets/interiorcastle/obj/Wall01.obj");
 }
 
-mat4 Portal::makePortalView(mat4 playerViewMatrix, mat4 otherEndMat) {
+mat4 Portal::makePortalView(mat4 playerViewMatrix, mat4 rot, mat4 otherEndMat) {
         mat4 mat = playerViewMatrix * transformMatrix * Ry(M_PI) * rotation * inverse(otherEndMat);
         return mat;
     }
@@ -26,13 +26,18 @@ Portal * Portal::getOtherEnd() {
     return otherEnd;
 }
 
-void Portal::setTransform(mat4 transform) { // change this back to just transform, make a get position func that extracts the position from the full mat
+void Portal::setTransform(mat4 transform) {
     transformMatrix = transform;
 }
 
 mat4 Portal::getTransform() {
     return transformMatrix;
 }
+
+mat4 Portal::getRotation() {
+    return rotation;
+}
+
 void Portal::draw(const mat4 & viewMat, const mat4 & projMat) {
     glUseProgram(shader);
     glUniformMatrix4fv(glGetUniformLocation(shader, "modelMatrix"), 1, GL_TRUE, transformMatrix.m);

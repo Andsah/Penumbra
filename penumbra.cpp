@@ -217,7 +217,7 @@ void init(void) {
 
     // Initiate game objects (models, textures, material properties etc.) - portals should fit in here somewhere
 
-	addPortalPair(vec3(4,5,23), vec3(20, 8, 10), Ry(0), Ry(M_PI_2));
+	addPortalPair(vec3(4,5,23), vec3(20, 8, 10), Ry(0), Ry(M_PI_2f));
 
 	// just a test - ceiling has backside, rendering z-buffer from above to fbo to get heightmap for player walking not gonna work - maybe if split all ceils off to a draw after writing to fbo?
 	//also this should be instancable
@@ -369,7 +369,7 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 			// Draw portal into stencil buffer
 			portal->draw(viewMat, projMat);
 
-			mat4 otherEndView = portal->makePortalView(viewMat, otherEnd->getTransform());
+			mat4 otherEndView = portal->makePortalView(viewMat, otherEnd->getRotation(), otherEnd->getTransform());
 
 			// Base case, render inside of inner portal
 			if (recursionLevel == maxRecursionLevel)
@@ -400,7 +400,6 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 				// Draw scene objects with destView, limited to stencil buffer
 				// use an edited projection matrix to set the near plane to the portal plane
 				drawNonPortals(otherEndView, portal->clipProjMat(otherEndView, projMat));
-				//drawNonPortals(destView, projMat);
 			}
 			else
 			{
@@ -516,7 +515,7 @@ void display(void) {
 
 	// ---- RENDER PHASE ----
 
-	drawRecursivePortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix, 1, 0);
+	drawRecursivePortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix, 3, 0);
 
 	//drawNonPortals(player->getPlayerCam()->viewMatrix, player->getPlayerCam()->projectionMatrix);
 	

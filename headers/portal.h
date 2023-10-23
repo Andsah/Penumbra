@@ -36,7 +36,7 @@ public:
     Portal(GLuint shader, vec3 position = vec3(0, 0, 0), mat4 rotation = Ry(0));
 
     // calculates the portalView of this portal based on where player is in relation to the portal and where the other portal is
-    mat4 makePortalView(mat4 playerViewMatrix, mat4 otherEndMat);
+    mat4 makePortalView(mat4 playerViewMatrix, mat4 rot, mat4 otherEndMat);
 
     void setOtherEnd(Portal * otherEnd);
 
@@ -45,6 +45,8 @@ public:
     void setTransform(mat4 transform);
 
     mat4 getTransform();
+
+    mat4 getRotation();
 
     void draw(const mat4 & viewMat, const mat4 & projMat);
 
