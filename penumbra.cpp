@@ -355,23 +355,26 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 			// region of current portal depth
 			glEnable(GL_STENCIL_TEST);
 
-			// Enable (writing into) all stencil bits
-			glStencilMask(0xFF);
+			// Fail stencil test when inside of outer portal
+			// (fail where we should be drawing the inner portal)
+			glStencilFunc(GL_NOTEQUAL, recursionLevel, 0xFF);
 
 			// Increment stencil value on stencil fail
 			// (on area of inner portal)
 			glStencilOp(GL_INCR, GL_KEEP, GL_KEEP);
 
-			// Fail stencil test when inside of outer portal
-			// (fail where we should be drawing the inner portal)
-			glStencilFunc(GL_NEVER, recursionLevel, 0xFF);
+			// Enable (writing into) all stencil bits
+			glStencilMask(0xFF);
 
 			// Draw portal into stencil buffer
 			portal->draw(viewMat, projMat);
 
 			mat4 otherEndView = portal->makePortalView(viewMat, otherEnd->getTransform());
 
-			// Enable color and depth drawing
+			// Base case, render inside of inner portal
+			if (recursionLevel == maxRecursionLevel)
+			{
+				// Enable color and depth drawing
 				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 				glDepthMask(GL_TRUE);
 				
@@ -383,12 +386,49 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 				// So the stuff we render here is rendered correctly
 				glEnable(GL_DEPTH_TEST);
 
-				glStencilMask(0xFF);
+				// Enable stencil test
+				// So we can limit drawing inside of the inner portal
+				glEnable(GL_STENCIL_TEST);
 
-				glStencilFunc(GL_EQUAL, 1, 0xFF);
+				// Disable drawing into stencil buffer
+				glStencilMask(0x00);
 
+				// Draw only where stencil value == recursionLevel + 1
+				// which is where we just drew the new portal
+				glStencilFunc(GL_EQUAL, recursionLevel + 1, 0xFF);
+
+				// Draw scene objects with destView, limited to stencil buffer
+				// use an edited projection matrix to set the near plane to the portal plane
 				drawNonPortals(otherEndView, portal->clipProjMat(otherEndView, projMat));
-			glClear(GL_STENCIL_BUFFER_BIT);
+				//drawNonPortals(destView, projMat);
+			}
+			else
+			{
+				// Recursion case
+				// Pass our new view matrix and the clipped projection matrix (see above)
+				drawRecursivePortals(otherEndView, portal->clipProjMat(otherEndView, projMat), maxRecursionLevel, recursionLevel + 1);
+			}
+
+			// Disable color and depth drawing
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+			glDepthMask(GL_FALSE);
+
+			// Enable stencil test and stencil drawing
+			glEnable(GL_STENCIL_TEST);
+			glStencilMask(0xFF);
+
+			// Fail stencil test when inside of our newly rendered
+			// inner portal
+			glStencilFunc(GL_NOTEQUAL, recursionLevel + 1, 0xFF);
+
+			// Decrement stencil value on stencil fail
+			// This resets the incremented values to what they were before,
+			// eventually ending up with a stencil buffer full of zero's again
+			// after the last (outer) step.
+			glStencilOp(GL_DECR, GL_KEEP, GL_KEEP);
+
+			// Draw portal into stencil buffer
+			portal->draw(viewMat, projMat);
 		}
 	}
 
@@ -420,9 +460,21 @@ void drawRecursivePortals(const mat4 & viewMat, const mat4 & projMat, size_t max
 	// Reset the depth function to the default
 	glDepthFunc(GL_LESS);
 
+	// Enable stencil test and disable writing to stencil buffer
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0x00);
+
+	// Draw at stencil >= recursionlevel
+	// which is at the current level or higher (more to the inside)
+	// This basically prevents drawing on the outside of this level.
+	glStencilFunc(GL_LEQUAL, recursionLevel, 0xFF);
+
 	// Enable color and depth drawing again
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
+
+	// And enable the depth test
+	glEnable(GL_DEPTH_TEST);
 
 	// Draw scene objects normally, only at recursionLevel
 	drawNonPortals(viewMat, projMat);
@@ -484,7 +536,7 @@ void display(void) {
  */
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
 	glutInitContextVersion(3, 2);
 	glutInitWindowSize(WIN_W, WIN_H);
 
