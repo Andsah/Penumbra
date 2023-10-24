@@ -73,7 +73,7 @@ void addPortalPair(vec3 pos1, vec3 pos2, mat4 r1, mat4 r2) {
 }
 
 int maxRecursion = 1;
-int testCase = 0;
+int testCase = 2; // 0 = 1 million billboards, 1 = moving portal and corner illusion, 2 = multi-recursion portals 
 
 // Picking stuff
 struct PixelInfo
